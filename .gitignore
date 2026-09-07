@@ -1,0 +1,35 @@
+﻿# Python environment
+venv/
+env/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Datasets (too large and messy for git)
+data/
+*.zip
+*.tar.gz
+
+# Model weights and artifacts (save large models in cloud / HF or local)
+*.keras
+*.h5
+*.tflite
+*.pt
+*.pth
+model/weights/
+model/saved_models/
+
+# Database and secrets
+*.db
+*.sqlite
+*.sqlite3
+.env
+secrets.toml
+.streamlit/secrets.toml
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

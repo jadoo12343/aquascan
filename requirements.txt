@@ -1,0 +1,7 @@
+﻿streamlit
+streamlit-folium
+folium
+pillow
+requests
+scikit-learn
+seaborn
