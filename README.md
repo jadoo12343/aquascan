@@ -1,4 +1,4 @@
-﻿# AquaScan — AI Waterway Pollution Reporter
+# AquaScan — AI Waterway Pollution Reporter
 
 > **ML Empowerment Build Challenge** | Target Category: **Sustainability AI**  
 > An explainable, geospatial AI platform enabling community volunteers and municipal teams to detect, classify, and prioritize aquatic pollution before it enters open waterways.
@@ -83,3 +83,42 @@ streamlit run app/app.py
 
 ## 6. Architecture & Frontend Decision
 - **Frontend Framework:** Streamlit was chosen over Gradio for AquaScan because interactive geospatial mapping (`streamlit-folium`) is a core feature for the demo and evaluation criteria (Real-World Impact 20%, UX 15%). Streamlit allows seamless integration of multi-tab layouts (Report, Map, Model Metrics) with stateful SQLite data handling in pure Python.
+
+---
+
+## 7. Dataset & Storage Convention
+
+> **Important for anyone cloning this repo:** The `data/` directory is git-ignored to prevent large image files from bloating the repository. Follow the instructions below to source the dataset locally.
+
+### Training Data Sources (Person A)
+The AquaScan classifier is trained on a merged dataset assembled from three public sources:
+
+| Dataset | Images | Source |
+|---|---|---|
+| Kaggle Garbage Classification | ~2,500 | [Kaggle](https://www.kaggle.com/datasets/asdasdasasdas/garbage-classification) |
+| TrashNet | ~2,500 | [GitHub](https://github.com/garythung/trashnet) |
+| TACO (Trash Annotations in Context) | ~1,500 (cropped) | [TACO Dataset](http://tacodataset.org/) |
+
+**Target classes:** `plastic`, `metal`, `glass`, `cardboard`, `paper`, `trash`
+
+### Local Directory Layout (after setup)
+```
+aquascan/
+├── data/
+│   ├── aquascan.db          ← SQLite database (auto-created on first run)
+│   ├── uploads/             ← User-submitted photos (saved by app at runtime)
+│   ├── raw/                 ← Downloaded original dataset images (set up manually)
+│   └── processed/           ← Pre-processed & augmented images (Person A pipeline)
+├── model/
+│   ├── mock.py              ← Mock classifier stub (Days 1–6, Person B)
+│   └── predict.py           ← EfficientNetB0 inference (Day 7+, Person A delivers)
+└── app/
+    ├── app.py               ← Streamlit application
+    └── db.py                ← SQLite database engine
+```
+
+### Setting Up Data Locally
+1. Download datasets from the sources above.
+2. Place raw images into `data/raw/` organized by class folder.
+3. Run Person A's preprocessing notebook in `notebooks/` to generate `data/processed/`.
+4. The `data/uploads/` folder and `data/aquascan.db` are created automatically when you run the app.

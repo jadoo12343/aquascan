@@ -1,7 +1,9 @@
-﻿streamlit
+streamlit
 streamlit-folium
 folium
 pillow
 requests
 scikit-learn
 seaborn
+tensorflow
+tf-keras-vis
