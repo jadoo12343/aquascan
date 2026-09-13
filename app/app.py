@@ -32,6 +32,9 @@ init_db = _db.init_db
 add_report = _db.add_report
 get_reports_df = _db.get_reports_df
 get_report_count = _db.get_report_count
+get_severity_summary = _db.get_severity_summary
+seed_demo_reports = _db.seed_demo_reports
+clear_all_reports = _db.clear_all_reports
 
 _mock_spec = _ilu.spec_from_file_location("mock", ROOT / "model" / "mock.py")
 _mock = _ilu.module_from_spec(_mock_spec)
@@ -39,6 +42,7 @@ _mock_spec.loader.exec_module(_mock)
 predict_image = _mock.mock_predict   # ← swap to model/predict.py on Day 7
 
 import folium
+from folium.plugins import MarkerCluster, HeatMap
 from streamlit_folium import st_folium
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -97,6 +101,30 @@ with st.sidebar:
 
     report_count = get_report_count()
     st.metric(label="📋 Total Reports Logged", value=report_count)
+
+    sev_summary = get_severity_summary()
+    st.markdown("**Priority Distribution**")
+    m_col1, m_col2 = st.columns(2)
+    with m_col1:
+        st.metric("🚨 Critical", sev_summary["Critical"])
+        st.metric("⚠️ Medium", sev_summary["Medium"])
+    with m_col2:
+        st.metric("⚡ High", sev_summary["High"])
+        st.metric("🌱 Low", sev_summary["Low"])
+
+    st.write("---")
+    st.markdown("### 🧪 Demo Tools")
+    col_seed, col_clear = st.columns(2)
+    with col_seed:
+        if st.button("🌱 Load Hotspots", help="Populate map with sample Indian waterway reports", use_container_width=True):
+            count = seed_demo_reports(force=True)
+            st.toast(f"Added {count} hotspot records!", icon="🌊")
+            st.rerun()
+    with col_clear:
+        if st.button("🗑️ Reset DB", help="Clear all stored reports", use_container_width=True):
+            clear_all_reports()
+            st.toast("Database cleared", icon="🧹")
+            st.rerun()
 
     st.write("---")
     st.markdown("### 📌 Quick Guide")
@@ -266,72 +294,164 @@ with tab_scan:
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_map:
     st.subheader("🗺️ Geospatial Pollution Hotspots")
+    st.caption("Interactive debris mapping across waterways with clustering and density analysis.")
 
     df = get_reports_df()
 
     if df.empty:
         st.info(
             "📭 No reports in the database yet. "
-            "Submit a report in the **📸 Scan & Report** tab and it will appear here!"
+            "Submit a report in the **📸 Scan & Report** tab or click **'🌱 Load Hotspots'** in the sidebar to view sample data!"
         )
-        # Still render a default map so the page doesn't look broken
         m = folium.Map(
-            location=[20.5937, 78.9629],  # Centre of India
+            location=[20.5937, 78.9629],
             zoom_start=5,
             tiles="CartoDB dark_matter",
         )
         st_folium(m, use_container_width=True, height=500)
 
     else:
-        # Map centred on the average of all report locations
-        avg_lat = df["lat"].mean()
-        avg_lon = df["lon"].mean()
+        # ── Interactive Filter Controls ──
+        all_severities = ["Critical", "High", "Medium", "Low"]
+        all_classes = sorted(df["predicted_class"].unique().tolist())
+
+        fc1, fc2, fc3 = st.columns([1.5, 1.5, 2], gap="medium")
+        with fc1:
+            selected_severities = st.multiselect(
+                "Filter Severity",
+                options=all_severities,
+                default=all_severities,
+                help="Show reports matching selected severity levels",
+            )
+        with fc2:
+            selected_classes = st.multiselect(
+                "Filter Debris Class",
+                options=all_classes,
+                default=all_classes,
+                help="Filter by specific waste types",
+            )
+        with fc3:
+            layer_mode = st.radio(
+                "Map Visualization Layer",
+                options=["Marker Clusters", "Density HeatMap", "Both Combined"],
+                horizontal=True,
+                help="Toggle between clustered pins, debris density heatmaps, or both",
+            )
+
+        # Apply filters
+        active_sev = selected_severities if selected_severities else all_severities
+        active_cls = selected_classes if selected_classes else all_classes
+        filtered_df = df[df["severity"].isin(active_sev) & df["predicted_class"].isin(active_cls)]
+
+        if filtered_df.empty:
+            st.warning("⚠️ No reports match the selected filters. Showing empty base map.")
+            center_lat, center_lon = 20.5937, 78.9629
+            zoom_lvl = 5
+        else:
+            center_lat = filtered_df["lat"].mean()
+            center_lon = filtered_df["lon"].mean()
+            zoom_lvl = 6
 
         m = folium.Map(
-            location=[avg_lat, avg_lon],
-            zoom_start=6,
+            location=[center_lat, center_lon],
+            zoom_start=zoom_lvl,
             tiles="CartoDB dark_matter",
         )
 
-        for _, row in df.iterrows():
-            colour = MARKER_COLOURS.get(row["severity"], "blue")
-            popup_html = f"""
-            <b>Report #{int(row['id'])}</b><br>
-            Type: <b>{row['predicted_class'].capitalize()}</b><br>
-            Confidence: {float(row['confidence']):.0%}<br>
-            Severity: <b>{row['severity']}</b><br>
-            <small>{row['timestamp']}</small>
-            """
-            folium.Marker(
-                location=[row["lat"], row["lon"]],
-                popup=folium.Popup(popup_html, max_width=220),
-                tooltip=f"{row['predicted_class'].capitalize()} — {row['severity']}",
-                icon=folium.Icon(color=colour, icon="exclamation-sign"),
-            ).add_to(m)
+        if not filtered_df.empty:
+            # Add HeatMap layer if requested
+            if layer_mode in ("Density HeatMap", "Both Combined"):
+                sev_weights = {"Critical": 1.0, "High": 0.75, "Medium": 0.5, "Low": 0.25}
+                heat_data = [
+                    [row["lat"], row["lon"], sev_weights.get(row["severity"], 0.5)]
+                    for _, row in filtered_df.iterrows()
+                ]
+                HeatMap(
+                    heat_data,
+                    name="Debris Density",
+                    radius=18,
+                    blur=14,
+                    min_opacity=0.35,
+                    max_zoom=10,
+                ).add_to(m)
 
-        map_col, stats_col = st.columns([2, 1], gap="large")
+            # Add MarkerCluster if requested
+            if layer_mode in ("Marker Clusters", "Both Combined"):
+                cluster = MarkerCluster(
+                    name="Pollution Reports",
+                    options={"maxClusterRadius": 40, "spiderfyOnMaxZoom": True},
+                ).add_to(m)
+
+                for _, row in filtered_df.iterrows():
+                    colour = MARKER_COLOURS.get(row["severity"], "blue")
+                    popup_html = f"""
+                    <div style="font-family:sans-serif; min-width:160px;">
+                        <b style="font-size:14px;">Report #{int(row['id'])}</b><br>
+                        Type: <b>{row['predicted_class'].capitalize()}</b><br>
+                        Confidence: <b>{float(row['confidence']):.0%}</b><br>
+                        Severity: <span style="color:{SEVERITY_COLOURS.get(row['severity'], '#333')}; font-weight:bold;">{row['severity']}</span><br>
+                        Coords: <small>{row['lat']:.4f}, {row['lon']:.4f}</small><br>
+                        <small style="color:#666;">{row['timestamp']}</small>
+                    </div>
+                    """
+                    folium.Marker(
+                        location=[row["lat"], row["lon"]],
+                        popup=folium.Popup(popup_html, max_width=240),
+                        tooltip=f"{row['predicted_class'].capitalize()} ({row['severity']})",
+                        icon=folium.Icon(color=colour, icon="exclamation-sign"),
+                    ).add_to(cluster)
+
+        map_col, stats_col = st.columns([2.5, 1], gap="large")
 
         with map_col:
-            st_folium(m, use_container_width=True, height=520)
+            st_folium(m, use_container_width=True, height=530)
 
         with stats_col:
-            st.markdown("#### 📊 Quick Stats")
-            st.metric("Total Reports", len(df))
+            st.markdown("#### 📊 Filtered Overview")
+            st.metric("Displayed Reports", f"{len(filtered_df)} / {len(df)}")
 
             st.markdown("**By Severity**")
-            sev_counts = df["severity"].value_counts()
-            for sev, cnt in sev_counts.items():
+            sev_counts = filtered_df["severity"].value_counts()
+            for sev in ["Critical", "High", "Medium", "Low"]:
+                cnt = sev_counts.get(sev, 0)
                 colour = SEVERITY_COLOURS.get(sev, "#888")
                 st.markdown(
-                    f"<span style='color:{colour}; font-weight:700;'>● {sev}</span>  "
-                    f"<span style='color:#c9d1d9;'>{cnt} reports</span>",
+                    f"<span style='color:{colour}; font-weight:700;'>● {sev}</span>: "
+                    f"<span>{cnt}</span>",
                     unsafe_allow_html=True,
                 )
 
-            st.markdown("**By Debris Type**")
-            class_counts = df["predicted_class"].value_counts()
-            for cls, cnt in class_counts.items():
+            st.markdown("**By Debris Class**")
+            cls_counts = filtered_df["predicted_class"].value_counts()
+            for cls, cnt in cls_counts.items():
                 st.markdown(f"- `{cls}`: **{cnt}**")
+
+        st.write("---")
+
+        # ── Reports Log Table & Data Export ──
+        log_col1, log_col2 = st.columns([3, 1])
+        with log_col1:
+            st.markdown("#### 📋 Field Reports Log")
+        with log_col2:
+            if not filtered_df.empty:
+                csv_bytes = filtered_df.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    label="📥 Export CSV",
+                    data=csv_bytes,
+                    file_name="aquascan_waterway_reports.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+
+        if not filtered_df.empty:
+            display_df = filtered_df[
+                ["id", "predicted_class", "severity", "confidence", "lat", "lon", "timestamp"]
+            ].copy()
+            display_df.columns = [
+                "ID", "Debris Class", "Severity", "Confidence", "Latitude", "Longitude", "Logged At"
+            ]
+            display_df["Confidence"] = display_df["Confidence"].apply(lambda x: f"{x:.0%}")
+            st.dataframe(display_df, use_container_width=True, hide_index=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
