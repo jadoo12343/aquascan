@@ -20,7 +20,7 @@ DB_PATH = DB_DIR / "aquascan.db"
 def _get_connection() -> sqlite3.Connection:
     """Open a thread-safe SQLite connection with row factory enabled."""
     DB_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False, timeout=10.0)
     conn.row_factory = sqlite3.Row   # Allows dict-style access: row["lat"]
     return conn
 

@@ -158,6 +158,14 @@ with tab_scan:
         "The AI will classify it and log the report to the pollution database."
     )
 
+    if "just_submitted" in st.session_state:
+        sub = st.session_state.pop("just_submitted")
+        st.success(
+            f"✅  **Report #{sub['id']} logged successfully!** "
+            f"Classified as **{sub['class'].capitalize()}** ({sub['severity']}) at "
+            f"({sub['lat']:.4f}, {sub['lon']:.4f}). View it on the **🗺️ Pollution Map** tab."
+        )
+
     # ── Image Upload ─────────────────────────────────────────────────────────
     uploaded_file = st.file_uploader(
         "Choose an image of waste found near a waterway…",
@@ -166,7 +174,20 @@ with tab_scan:
     )
 
     if uploaded_file is not None:
-        image = Image.open(uploaded_file).convert("RGB")
+        # Cache prediction per upload so interactions (presets, inputs) don't re-roll random mock predictions
+        upload_signature = f"{uploaded_file.name}_{uploaded_file.size}"
+        if (
+            "active_upload" not in st.session_state
+            or st.session_state["active_upload"] != upload_signature
+        ):
+            img = Image.open(uploaded_file).convert("RGB")
+            p_class, conf, sev = predict_image(img)
+            st.session_state["active_upload"] = upload_signature
+            st.session_state["active_img"] = img
+            st.session_state["active_pred"] = (p_class, conf, sev)
+
+        image = st.session_state["active_img"]
+        predicted_class, confidence, severity = st.session_state["active_pred"]
 
         col_img, col_result = st.columns([1, 1], gap="large")
 
@@ -175,9 +196,6 @@ with tab_scan:
 
         with col_result:
             st.markdown("#### 🤖 AI Classification Result")
-
-            # Run mock (or real on Day 7) classifier
-            predicted_class, confidence, severity = predict_image(image)
 
             # Display prediction card
             sev_colour = SEVERITY_COLOURS.get(severity, "#888")
@@ -216,14 +234,27 @@ with tab_scan:
         st.divider()
         st.markdown("#### 📍 Report Location")
 
+        # Initialize coordinate state if not yet set
+        if "lat_input" not in st.session_state:
+            st.session_state["lat_input"] = 20.5937
+        if "lon_input" not in st.session_state:
+            st.session_state["lon_input"] = 78.9629
+
+        def on_preset_change():
+            choice = st.session_state.get("preset_selector")
+            if choice and choice in GPS_PRESETS:
+                p_lat, p_lon = GPS_PRESETS[choice]
+                if p_lat is not None and p_lon is not None:
+                    st.session_state["lat_input"] = float(p_lat)
+                    st.session_state["lon_input"] = float(p_lon)
+
         preset_choice = st.selectbox(
             "Quick Preset Locations (or enter custom coordinates below)",
             options=list(GPS_PRESETS.keys()),
             index=0,
-            key="preset",
+            key="preset_selector",
+            on_change=on_preset_change,
         )
-
-        preset_lat, preset_lon = GPS_PRESETS[preset_choice]
 
         col_lat, col_lon = st.columns(2)
         with col_lat:
@@ -231,7 +262,6 @@ with tab_scan:
                 "Latitude",
                 min_value=-90.0,
                 max_value=90.0,
-                value=preset_lat if preset_lat is not None else 20.5937,
                 format="%.4f",
                 key="lat_input",
             )
@@ -240,7 +270,6 @@ with tab_scan:
                 "Longitude",
                 min_value=-180.0,
                 max_value=180.0,
-                value=preset_lon if preset_lon is not None else 78.9629,
                 format="%.4f",
                 key="lon_input",
             )
@@ -274,13 +303,17 @@ with tab_scan:
                 lon=lon,
             )
 
-            st.success(
-                f"✅  Report #{new_id} logged successfully! "
-                f"**{predicted_class.capitalize()}** detected at "
-                f"({lat:.4f}, {lon:.4f})."
-            )
             st.toast(f"🗄️ Report #{new_id} saved to database!", icon="✅")
-            st.rerun()  # Refresh sidebar counter
+            st.session_state["just_submitted"] = {
+                "id": new_id,
+                "class": predicted_class,
+                "severity": severity,
+                "lat": lat,
+                "lon": lon,
+            }
+            # Reset active upload cache so subsequent submissions are fresh
+            st.session_state.pop("active_upload", None)
+            st.rerun()  # Refresh sidebar counter and database state
 
     else:
         st.info(
@@ -404,7 +437,7 @@ with tab_map:
         map_col, stats_col = st.columns([2.5, 1], gap="large")
 
         with map_col:
-            st_folium(m, use_container_width=True, height=530)
+            st_folium(m, use_container_width=True, height=530, key=f"folium_{layer_mode}")
 
         with stats_col:
             st.markdown("#### 📊 Filtered Overview")
