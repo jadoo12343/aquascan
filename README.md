@@ -40,10 +40,12 @@ aquascan/
 ├── README.md             # Project documentation & setup instructions
 ├── requirements.txt      # Python dependencies for the application
 ├── app/                  # Frontend, mapping & backend logic (Person B)
-│   └── app.py            # Streamlit dashboard & Folium map integration
-├── model/                # Model training, evaluation & Grad-CAM scripts (Person A)
+│   ├── app.py            # Streamlit dashboard, Folium clustering & heatmap
+│   └── db.py             # SQLite persistence, aggregation & demo seeder
+├── model/                # Model inference, weights & evaluation (Person A)
+│   └── mock.py           # Classifier contract stub (Days 1–6)
 ├── notebooks/            # Exploratory data analysis & prototyping notebooks
-└── data/                 # Raw and processed datasets (git-ignored)
+└── data/                 # Local uploads, SQLite database & datasets (git-ignored)
 ```
 
 ---
