@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 import streamlit as st
+import pandas as pd
 from PIL import Image
 
 # ── Make sure imports from sibling directories work when running from app/ ──
