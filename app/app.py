@@ -502,7 +502,11 @@ with tab_map:
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_metrics:
     st.subheader("📊 Model Performance & Explainability Suite")
-    st.caption("Empirical validation, cross-class confusion matrix, and Grad-CAM visual attention maps.")
+    st.caption("Evaluation preview, cross-class confusion matrix, and Grad-CAM visual attention maps.")
+    st.warning(
+        "Demo status: Person A's trained EfficientNetB0 model is not available yet. "
+        "The metrics and Grad-CAM shown here are benchmark/simulated placeholders and must be replaced with verified test results."
+    )
 
     subtab_eval, subtab_gradcam, subtab_arch = st.tabs([
         "📈 Evaluation Benchmarks",
