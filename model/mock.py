@@ -22,18 +22,7 @@ from PIL import Image
 # ── Target classes AquaScan recognises ──────────────────────────────────────
 WASTE_CLASSES = ["plastic", "metal", "glass", "cardboard", "paper", "trash"]
 
-# ── Severity lookup table (agreed with Person A as the "handoff contract") ──
-SEVERITY_MAP = {
-    "plastic":   "Critical",
-    "metal":     "High",
-    "glass":     "High",
-    "cardboard": "Medium",
-    "paper":     "Low",
-    "trash":     "Medium",
-}
-
-
-def mock_predict(image: Image.Image) -> tuple[str, float, str]:
+def mock_predict(image: Image.Image) -> tuple[str, float]:
     """
     Simulate an EfficientNetB0 classification result.
 
@@ -44,9 +33,7 @@ def mock_predict(image: Image.Image) -> tuple[str, float, str]:
     Returns:
         predicted_class (str): One of WASTE_CLASSES
         confidence      (float): Realistic probability 0.72 – 0.98
-        severity        (str): 'Critical' | 'High' | 'Medium' | 'Low'
     """
     predicted_class = random.choice(WASTE_CLASSES)
     confidence = round(random.uniform(0.72, 0.98), 2)
-    severity = SEVERITY_MAP[predicted_class]
-    return predicted_class, confidence, severity
+    return predicted_class, confidence

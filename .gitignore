@@ -30,6 +30,9 @@ secrets.toml
 
 # IDE and OS
 .vscode/
+.freebuff/
+*_Conversation_Export.md
+*_Project_Briefing.html
 .idea/
 .DS_Store
 Thumbs.db

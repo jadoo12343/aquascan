@@ -23,33 +23,16 @@ from PIL import Image
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-# Dynamically import db and mock — robust to running from project root or app/
-import importlib.util as _ilu
-
-_db_spec = _ilu.spec_from_file_location("db", ROOT / "app" / "db.py")
-_db = _ilu.module_from_spec(_db_spec)
-_db_spec.loader.exec_module(_db)
-init_db = _db.init_db
-add_report = _db.add_report
-get_reports_df = _db.get_reports_df
-get_report_count = _db.get_report_count
-get_severity_summary = _db.get_severity_summary
-seed_demo_reports = _db.seed_demo_reports
-clear_all_reports = _db.clear_all_reports
-
-_mock_spec = _ilu.spec_from_file_location("mock", ROOT / "model" / "mock.py")
-_mock = _ilu.module_from_spec(_mock_spec)
-_mock_spec.loader.exec_module(_mock)
-predict_image = _mock.mock_predict   # ← swap to model/predict.py on Day 7
-
-_eval_spec = _ilu.spec_from_file_location("eval", ROOT / "model" / "eval.py")
-_eval = _ilu.module_from_spec(_eval_spec)
-_eval_spec.loader.exec_module(_eval)
-get_per_class_metrics = _eval.get_per_class_metrics
-plot_confusion_matrix = _eval.plot_confusion_matrix
-generate_gradcam_simulation = _eval.generate_gradcam_simulation
-get_model_card_json = _eval.get_model_card_json
-BENCHMARK_SUMMARY = _eval.BENCHMARK_SUMMARY
+from app.db import (
+    init_db, add_report, get_reports_df, get_report_count,
+    get_severity_summary, seed_demo_reports, clear_all_reports,
+)
+from model.mock import mock_predict as predict_image
+from model.severity import get_severity
+from model.eval import (
+    get_per_class_metrics, plot_confusion_matrix,
+    generate_gradcam_simulation, get_model_card_json, BENCHMARK_SUMMARY,
+)
 
 import folium
 from folium.plugins import MarkerCluster, HeatMap
@@ -191,7 +174,8 @@ with tab_scan:
             or st.session_state["active_upload"] != upload_signature
         ):
             img = Image.open(uploaded_file).convert("RGB")
-            p_class, conf, sev = predict_image(img)
+            p_class, conf = predict_image(img)
+            sev = get_severity(p_class)
             st.session_state["active_upload"] = upload_signature
             st.session_state["active_img"] = img
             st.session_state["active_pred"] = (p_class, conf, sev)
