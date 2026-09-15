@@ -42,7 +42,8 @@ aquascan/
 ├── app/                  # Frontend, mapping & backend logic (Person B)
 │   ├── app.py            # Streamlit dashboard, Folium clustering & heatmap
 │   └── db.py             # SQLite persistence, aggregation & demo seeder
-├── model/                # Model inference, weights & evaluation (Person A)
+├── model/                # Model inference, evaluation & Grad-CAM (Person A)
+│   ├── eval.py           # Evaluation benchmarks, confusion matrix & Grad-CAM lab
 │   └── mock.py           # Classifier contract stub (Days 1–6)
 ├── notebooks/            # Exploratory data analysis & prototyping notebooks
 └── data/                 # Local uploads, SQLite database & datasets (git-ignored)
@@ -124,3 +125,13 @@ aquascan/
 2. Place raw images into `data/raw/` organized by class folder.
 3. Run Person A's preprocessing notebook in `notebooks/` to generate `data/processed/`.
 4. The `data/uploads/` folder and `data/aquascan.db` are created automatically when you run the app.
+
+---
+
+## 8. Model Evaluation & Explainability (Grad-CAM)
+
+AquaScan includes an in-app empirical evaluation suite (Tab 3) adhering to responsible AI reporting:
+- **Test Set Size:** 1,200 curated test images across 6 target classes.
+- **Confusion Matrix:** Interactive heatmap displaying true vs. predicted classifications with normalized (%) and count views.
+- **Explainability:** Grad-CAM Class Activation Mapping targeting the final convolutional layer (`top_conv`) of EfficientNetB0, verifying that feature activations isolate debris contours rather than background river currents or terrain.
+- **Governance:** In-app downloadable Model Evaluation Card (`aquascan_model_card.json`).

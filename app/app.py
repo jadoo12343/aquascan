@@ -29,6 +29,7 @@ from app.db import (
 )
 from model.mock import mock_predict as predict_image
 from model.severity import get_severity
+from model.narration import get_explanation
 from model.eval import (
     get_per_class_metrics, plot_confusion_matrix,
     generate_gradcam_simulation, get_model_card_json, BENCHMARK_SUMMARY,
@@ -176,12 +177,13 @@ with tab_scan:
             img = Image.open(uploaded_file).convert("RGB")
             p_class, conf = predict_image(img)
             sev = get_severity(p_class)
+            explanation = get_explanation(p_class, conf, sev)
             st.session_state["active_upload"] = upload_signature
             st.session_state["active_img"] = img
-            st.session_state["active_pred"] = (p_class, conf, sev)
+            st.session_state["active_pred"] = (p_class, conf, sev, explanation)
 
         image = st.session_state["active_img"]
-        predicted_class, confidence, severity = st.session_state["active_pred"]
+        predicted_class, confidence, severity, explanation = st.session_state["active_pred"]
 
         col_img, col_result = st.columns([1, 1], gap="large")
 
@@ -223,6 +225,7 @@ with tab_scan:
                 """,
                 unsafe_allow_html=True,
             )
+            st.info(explanation)
 
         # ── GPS Location Section ─────────────────────────────────────────────
         st.divider()
@@ -626,7 +629,7 @@ with tab_metrics:
             | **Frontend** | Streamlit (Python-native, multi-tab) | Fast stateful reactivity, seamless geospatial embedding |
             | **Geospatial Mapping** | Folium + streamlit-folium | Interactive clustering & thermal density maps |
             | **Persistent Storage** | SQLite (local, thread-safe) | Zero-config, portable database with full ACID compliance |
-            | **LLM Narration** | Gemini API (Day 10) | Concise 3-sentence ecological guidance |
+            | **LLM Narration** | Groq API (Llama 3.1, Day 6) | Concise 3-sentence ecological guidance |
             | **Deployment** | Hugging Face Spaces (Day 14) | Scalable public hosting with zero cloud infrastructure cost |
 
             ### Target Debris Classes & Priority Standards
