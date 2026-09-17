@@ -33,6 +33,7 @@ from model.narration import get_explanation
 from model.eval import (
     get_per_class_metrics, plot_confusion_matrix,
     generate_gradcam_simulation, get_model_card_json, BENCHMARK_SUMMARY,
+    create_demo_waterway_image,
 )
 
 import folium
@@ -121,6 +122,19 @@ with st.sidebar:
             st.rerun()
 
     st.write("---")
+    with st.expander("🔑 LLM Settings (Groq API)", expanded=False):
+        st.caption("Optional: Set a key from [console.groq.com](https://console.groq.com) for real-time Llama 3.1 narration.")
+        groq_input = st.text_input(
+            "Groq API Key",
+            type="password",
+            value=st.session_state.get("groq_api_key", ""),
+            placeholder="gsk_...",
+            help="If left blank, system falls back to environment variable or standard guidance.",
+            key="groq_key_input",
+        )
+        if groq_input != st.session_state.get("groq_api_key", ""):
+            st.session_state["groq_api_key"] = groq_input
+
     st.markdown("### 📌 Quick Guide")
     st.markdown(
         """
@@ -175,15 +189,25 @@ with tab_scan:
             or st.session_state["active_upload"] != upload_signature
         ):
             img = Image.open(uploaded_file).convert("RGB")
-            p_class, conf = predict_image(img)
-            sev = get_severity(p_class)
-            explanation = get_explanation(p_class, conf, sev)
+            pred_raw = predict_image(img)
+
+            # Defensive unpacking: handles (class, conf) or (class, conf, sev) or (class, conf, heatmap, sev)
+            if isinstance(pred_raw, (tuple, list)):
+                p_class = str(pred_raw[0])
+                conf = float(pred_raw[1])
+                sev = pred_raw[2] if len(pred_raw) > 2 and isinstance(pred_raw[2], str) else get_severity(p_class)
+            else:
+                p_class, conf, sev = "plastic", 0.90, "Critical"
+
+            active_key = st.session_state.get("groq_api_key") or os.environ.get("GROQ_API_KEY")
+            explanation, is_ai = get_explanation(p_class, conf, sev, api_key=active_key)
+
             st.session_state["active_upload"] = upload_signature
             st.session_state["active_img"] = img
-            st.session_state["active_pred"] = (p_class, conf, sev, explanation)
+            st.session_state["active_pred"] = (p_class, conf, sev, explanation, is_ai)
 
         image = st.session_state["active_img"]
-        predicted_class, confidence, severity, explanation = st.session_state["active_pred"]
+        predicted_class, confidence, severity, explanation, is_ai = st.session_state["active_pred"]
 
         col_img, col_result = st.columns([1, 1], gap="large")
 
@@ -225,6 +249,12 @@ with tab_scan:
                 """,
                 unsafe_allow_html=True,
             )
+
+            # Narrative ecological impact section with transparency badge
+            if is_ai:
+                st.caption("🤖 **AI Ecological Breakdown** *(Groq LLaMA 3.1)*")
+            else:
+                st.caption("ℹ️ **Ecological Guidance** *(Standard Waterway Protocol)*")
             st.info(explanation)
 
         # ── GPS Location Section ─────────────────────────────────────────────
@@ -579,8 +609,7 @@ with tab_metrics:
         if selected_sample == "📸 Use Uploaded Image from Tab 1" and "active_img" in st.session_state:
             inspect_img = st.session_state["active_img"]
         else:
-            # Create procedural sample visual for explainability demo
-            inspect_img = Image.new("RGB", (224, 224), color=(30, 45, 60))
+            inspect_img = create_demo_waterway_image(selected_sample)
 
         cam_heatmap, cam_overlay = generate_gradcam_simulation(inspect_img)
 

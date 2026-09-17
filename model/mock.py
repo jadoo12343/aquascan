@@ -7,8 +7,9 @@ Streamlit reporting flow before the trained weights arrive (Day 7).
 
 How to swap in Person A's real model on Day 7
 ---------------------------------------------
-1. Person A creates model/predict.py with a predict_image() function
-   that matches the same signature as mock_predict() below.
+1. Person A creates model/predict.py with a predict_image(image) function.
+   The function should return (predicted_class, confidence) or
+   (predicted_class, confidence, severity) — app.py supports both.
 2. Change the import in app/app.py from:
        from model.mock import mock_predict as predict_image
    to:

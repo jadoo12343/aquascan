@@ -157,6 +157,50 @@ def generate_gradcam_simulation(image: Image.Image) -> tuple[Image.Image, Image.
     return Image.fromarray(colored_heatmap_uint8), Image.fromarray(overlay)
 
 
+def create_demo_waterway_image(sample_type: str = "plastic") -> Image.Image:
+    """
+    Generate a synthetic river/waterway scene with a debris silhouette
+    for the Grad-CAM explainability demonstration lab.
+    """
+    w, h = 224, 224
+    arr = np.zeros((h, w, 3), dtype=np.uint8)
+
+    # Water gradient background (blue-green river tones)
+    for y in range(h):
+        blue_val = int(110 + 40 * (y / h))
+        green_val = int(80 + 30 * (y / h))
+        arr[y, :, 0] = 30 + int(10 * np.sin(y / 15.0))   # R
+        arr[y, :, 1] = green_val + int(8 * np.sin(y / 10.0))  # G
+        arr[y, :, 2] = blue_val + int(12 * np.cos(y / 12.0))  # B
+
+    # Riverbank dirt/gravel on the left edge
+    for x in range(35):
+        fade = 1.0 - (x / 35.0)
+        arr[:, x, 0] = np.clip(arr[:, x, 0] * (1 - fade) + 85 * fade, 0, 255).astype(np.uint8)
+        arr[:, x, 1] = np.clip(arr[:, x, 1] * (1 - fade) + 65 * fade, 0, 255).astype(np.uint8)
+        arr[:, x, 2] = np.clip(arr[:, x, 2] * (1 - fade) + 45 * fade, 0, 255).astype(np.uint8)
+
+    img = Image.fromarray(arr)
+
+    # Draw centered debris object
+    from PIL import ImageDraw
+    draw = ImageDraw.Draw(img)
+
+    if "can" in sample_type.lower() or "metal" in sample_type.lower():
+        # Cylindrical soda can shape (aluminum red/silver)
+        draw.rectangle([95, 80, 135, 145], fill=(185, 45, 45), outline=(220, 220, 220), width=2)
+        draw.ellipse([95, 75, 135, 85], fill=(210, 210, 210))
+    elif "glass" in sample_type.lower():
+        # Green glass bottle silhouette
+        draw.polygon([(105, 70), (119, 70), (124, 90), (130, 150), (94, 150), (100, 90)], fill=(40, 140, 75), outline=(80, 190, 110))
+    else:
+        # Transparent/light-blue plastic bottle with cap
+        draw.rectangle([107, 65, 117, 75], fill=(20, 90, 190))  # cap
+        draw.polygon([(103, 75), (121, 75), (128, 95), (128, 155), (96, 155), (96, 95)], fill=(130, 190, 230), outline=(230, 245, 255), width=2)
+
+    return img
+
+
 def get_model_card_json() -> str:
     """Return JSON string of the complete model card for download."""
     card = {
