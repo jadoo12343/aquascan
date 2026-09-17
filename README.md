@@ -77,7 +77,18 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Run the Streamlit Application
+### 4. Configure Environment (Optional for AI Narration)
+To enable real-time LLaMA 3.1 ecological impact explanations, set a free Groq API key:
+```bash
+# Windows (PowerShell)
+$env:GROQ_API_KEY="your-groq-api-key"
+
+# Linux / macOS
+export GROQ_API_KEY="your-groq-api-key"
+```
+*(Note: If omitted, AquaScan automatically falls back to standard rule-based ecological guidance without errors).*
+
+### 5. Run the Streamlit Application
 ```bash
 streamlit run app/app.py
 ```
