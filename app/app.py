@@ -351,7 +351,7 @@ with tab_scan:
         pin_map = folium.Map(
             location=[curr_lat, curr_lon],
             zoom_start=5,
-            tiles="CartoDB dark_matter",
+            tiles="OpenStreetMap",
         )
 
         # Red marker at current chosen location
@@ -499,7 +499,7 @@ with tab_map:
         m = folium.Map(
             location=[20.5937, 78.9629],
             zoom_start=5,
-            tiles="CartoDB dark_matter",
+            tiles="OpenStreetMap",
         )
         st_folium(m, use_container_width=True, height=500)
 
@@ -548,7 +548,7 @@ with tab_map:
         m = folium.Map(
             location=[center_lat, center_lon],
             zoom_start=zoom_lvl,
-            tiles="CartoDB dark_matter",
+            tiles="OpenStreetMap",
         )
 
         if not filtered_df.empty:
