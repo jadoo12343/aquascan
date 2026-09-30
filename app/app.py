@@ -58,6 +58,171 @@ st.set_page_config(
 # ── Initialise database on every startup (safe — uses CREATE IF NOT EXISTS) ─
 init_db()
 
+# ── Modern Oceanic Glassmorphic Theme Injection ─────────────────────────────
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    html, body, [class*="css"], .stApp {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    }
+
+    /* Ambient Ocean Deep Background */
+    .stApp {
+        background: 
+            radial-gradient(circle at 10% 12%, rgba(14, 116, 144, 0.18), transparent 35%),
+            radial-gradient(circle at 90% 80%, rgba(37, 99, 235, 0.15), transparent 40%),
+            radial-gradient(circle at 50% 45%, rgba(15, 23, 42, 0.85), transparent 65%),
+            #070a12 !important;
+        background-attachment: fixed !important;
+        color: #f1f5f9;
+    }
+
+    /* Header transparency */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+    }
+
+    /* Glassmorphic Sidebar */
+    [data-testid="stSidebar"] {
+        background: rgba(10, 15, 26, 0.90) !important;
+        backdrop-filter: blur(16px) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+
+    /* Modern Pill Navigation Tabs */
+    [data-baseweb="tab-list"] {
+        background: rgba(15, 23, 42, 0.72) !important;
+        backdrop-filter: blur(14px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 14px !important;
+        padding: 6px 8px !important;
+        gap: 8px !important;
+        margin-bottom: 22px !important;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35) !important;
+    }
+
+    /* Completely eliminate default red underline and border line */
+    [data-baseweb="tab-border"], 
+    [data-baseweb="tab-highlight"] {
+        display: none !important;
+        height: 0px !important;
+        background: transparent !important;
+    }
+
+    /* Individual Tab Buttons */
+    button[data-baseweb="tab"] {
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        border-radius: 10px !important;
+        padding: 9px 20px !important;
+        color: #94a3b8 !important;
+        font-weight: 600 !important;
+        font-size: 0.94rem !important;
+        letter-spacing: 0.2px !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    button[data-baseweb="tab"]:hover {
+        color: #f8fafc !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    /* Active Selected Tab Pill */
+    button[data-baseweb="tab"][aria-selected="true"] {
+        background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        box-shadow: 0 4px 18px rgba(14, 165, 233, 0.42) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    /* Buttons Modern Elevation */
+    .stButton > button {
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        color: #e2e8f0 !important;
+        padding: 0.45rem 1rem !important;
+        transition: all 0.22s ease !important;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
+        border-color: rgba(56, 189, 248, 0.5) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: #ffffff !important;
+    }
+
+    .stButton > button:active {
+        transform: translateY(0px) !important;
+    }
+
+    /* Primary Accent Button */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35) !important;
+        color: #ffffff !important;
+    }
+
+    .stButton > button[kind="primary"]:hover {
+        box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55) !important;
+        border-color: rgba(255, 255, 255, 0.4) !important;
+    }
+
+    /* Metric Cards Glass Polish */
+    [data-testid="stMetric"] {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.07) !important;
+        border-radius: 12px !important;
+        padding: 12px 16px !important;
+        backdrop-filter: blur(10px) !important;
+        transition: all 0.2s ease !important;
+    }
+
+    [data-testid="stMetric"]:hover {
+        border-color: rgba(56, 189, 248, 0.35) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    /* File Uploader styling */
+    [data-testid="stFileUploader"] section {
+        background: rgba(15, 23, 42, 0.45) !important;
+        border: 1.5px dashed rgba(56, 189, 248, 0.35) !important;
+        border-radius: 14px !important;
+        transition: all 0.22s ease !important;
+        padding: 16px !important;
+    }
+
+    [data-testid="stFileUploader"] section:hover {
+        border-color: #38bdf8 !important;
+        background: rgba(15, 23, 42, 0.7) !important;
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.15) !important;
+    }
+
+    /* Expanders styling */
+    [data-testid="stExpander"] {
+        background: rgba(15, 23, 42, 0.55) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(8px) !important;
+    }
+
+    /* Subheader & Section titles */
+    h1, h2, h3, h4 {
+        letter-spacing: -0.3px !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # ── Upload storage directory ─────────────────────────────────────────────────
 UPLOAD_DIR = ROOT / "data" / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -195,8 +360,65 @@ with st.sidebar:
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# Tab Navigation
+# Hero Branding Header & Tab Navigation
 # ────────────────────────────────────────────────────────────────────────────
+st.markdown(
+    """
+    <div style="
+        background: linear-gradient(135deg, rgba(14, 116, 144, 0.22) 0%, rgba(30, 58, 138, 0.18) 50%, rgba(15, 23, 42, 0.65) 100%);
+        border: 1px solid rgba(56, 189, 248, 0.22);
+        border-radius: 16px;
+        padding: 22px 26px;
+        margin-bottom: 20px;
+        backdrop-filter: blur(14px);
+        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.55);
+    ">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+            <div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span style="font-size:2.4rem; filter: drop-shadow(0 2px 10px rgba(56,189,248,0.55));">🌊</span>
+                    <h1 style="
+                        margin:0;
+                        font-size:2.2rem;
+                        font-weight:800;
+                        background: linear-gradient(90deg, #38bdf8, #818cf8, #34d399);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        letter-spacing: -0.5px;
+                    ">AquaScan</h1>
+                    <span style="
+                        background: rgba(56, 189, 248, 0.15);
+                        border: 1px solid rgba(56, 189, 248, 0.35);
+                        color: #38bdf8;
+                        padding: 3px 10px;
+                        border-radius: 20px;
+                        font-size: 0.75rem;
+                        font-weight: 700;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    ">Devpost ML Challenge</span>
+                </div>
+                <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 0.95rem; font-weight: 400;">
+                    AI Waterway Pollution Intelligence • Explainable Vision (Grad-CAM) • Geospatial Hotspots
+                </p>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <span style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 12px; font-size:0.8rem; color:#cbd5e1; font-weight:500;">
+                    🧠 EfficientNetB0
+                </span>
+                <span style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 12px; font-size:0.8rem; color:#cbd5e1; font-weight:500;">
+                    🔬 Grad-CAM (top_conv)
+                </span>
+                <span style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 12px; font-size:0.8rem; color:#cbd5e1; font-weight:500;">
+                    🤖 Groq LLaMA 3.1
+                </span>
+            </div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 tab_scan, tab_map, tab_metrics = st.tabs(
     ["📸 Scan & Report", "🗺️ Pollution Map", "📊 Model Performance & About"]
 )
