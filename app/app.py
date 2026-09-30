@@ -13,6 +13,8 @@ Day 2 additions:
 
 import sys
 import os
+import base64
+from io import BytesIO
 from pathlib import Path
 from datetime import datetime
 import streamlit as st
@@ -58,6 +60,41 @@ init_db()
 # ── Upload storage directory ─────────────────────────────────────────────────
 UPLOAD_DIR = ROOT / "data" / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@st.cache_data(max_entries=150)
+def get_report_image_b64(image_path_str: str, debris_class: str = "plastic") -> str:
+    """
+    Load and downsample a report's photo to base64 Data URI format
+    for direct HTML embedding inside Leaflet / Folium tooltips and popups.
+    """
+    p = Path(image_path_str) if image_path_str else None
+    if p and not p.is_absolute():
+        p = ROOT / p
+    if p and not p.exists():
+        fallback = UPLOAD_DIR / p.name
+        if fallback.exists():
+            p = fallback
+
+    if p and p.exists():
+        try:
+            with Image.open(p) as im:
+                im = im.convert("RGB")
+                im.thumbnail((260, 260))
+                buf = BytesIO()
+                im.save(buf, format="JPEG", quality=75)
+                return base64.b64encode(buf.getvalue()).decode("utf-8")
+        except Exception:
+            pass
+
+    # Fallback to simulated waterway image for this specific class
+    try:
+        im = create_demo_waterway_image(debris_class)
+        buf = BytesIO()
+        im.save(buf, format="JPEG", quality=75)
+        return base64.b64encode(buf.getvalue()).decode("utf-8")
+    except Exception:
+        return ""
 
 # ── Severity badge colours ───────────────────────────────────────────────────
 SEVERITY_COLOURS = {
@@ -615,20 +652,59 @@ with tab_map:
 
                 for _, row in filtered_df.iterrows():
                     colour = MARKER_COLOURS.get(row["severity"], "blue")
-                    popup_html = f"""
-                    <div style="font-family:sans-serif; min-width:160px;">
-                        <b style="font-size:14px;">Report #{int(row['id'])}</b><br>
-                        Type: <b>{row['predicted_class'].capitalize()}</b><br>
-                        Confidence: <b>{float(row['confidence']):.0%}</b><br>
-                        Severity: <span style="color:{SEVERITY_COLOURS.get(row['severity'], '#333')}; font-weight:bold;">{row['severity']}</span><br>
-                        Coords: <small>{row['lat']:.4f}, {row['lon']:.4f}</small><br>
-                        <small style="color:#666;">{row['timestamp']}</small>
+                    sev_colour = SEVERITY_COLOURS.get(row["severity"], "#333")
+                    img_b64 = get_report_image_b64(
+                        row.get("image_path", ""),
+                        row.get("predicted_class", "plastic"),
+                    )
+
+                    img_tag_tooltip = (
+                        f'<img src="data:image/jpeg;base64,{img_b64}" style="width:160px; height:95px; object-fit:cover; border-radius:6px; margin-bottom:6px; display:block; border: 1px solid #ddd;" />'
+                        if img_b64 else ""
+                    )
+                    img_tag_popup = (
+                        f'<img src="data:image/jpeg;base64,{img_b64}" style="width:100%; max-height:160px; object-fit:cover; border-radius:8px; margin-bottom:8px; display:block; border: 1px solid #ccc;" />'
+                        if img_b64 else ""
+                    )
+
+                    tooltip_html = f"""
+                    <div style="font-family:-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size:12px; width:160px; padding:2px;">
+                        {img_tag_tooltip}
+                        <div style="font-weight:700; font-size:13px; color:#111; margin-bottom:2px;">
+                            Report #{int(row['id'])}: <span style="color:{sev_colour};">{row['predicted_class'].upper()}</span>
+                        </div>
+                        <div style="color:#555; font-size:11px; margin-bottom:2px;">
+                            Severity: <b style="color:{sev_colour};">{row['severity']}</b> • Conf: <b>{float(row['confidence']):.0%}</b>
+                        </div>
+                        <div style="color:#777; font-size:10px;">
+                            📍 {row['lat']:.4f}°N, {row['lon']:.4f}°E<br>
+                            <span style="color:#0969da; font-weight:600;">Click pin for details</span>
+                        </div>
                     </div>
                     """
+
+                    popup_html = f"""
+                    <div style="font-family:-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; min-width:220px; max-width:260px;">
+                        {img_tag_popup}
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span style="font-size:15px; font-weight:700; color:#111;">Report #{int(row['id'])}</span>
+                            <span style="background:{sev_colour}; color:#fff; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">
+                                {row['severity']}
+                            </span>
+                        </div>
+                        <div style="font-size:12px; line-height:1.5; color:#333;">
+                            <b>Class:</b> {row['predicted_class'].capitalize()}<br>
+                            <b>Confidence:</b> {float(row['confidence']):.0%}<br>
+                            <b>Location:</b> {row['lat']:.4f}°N, {row['lon']:.4f}°E<br>
+                            <small style="color:#666;">🕒 Logged: {row['timestamp']}</small>
+                        </div>
+                    </div>
+                    """
+
                     folium.Marker(
                         location=[row["lat"], row["lon"]],
-                        popup=folium.Popup(popup_html, max_width=240),
-                        tooltip=f"{row['predicted_class'].capitalize()} ({row['severity']})",
+                        popup=folium.Popup(popup_html, max_width=280),
+                        tooltip=folium.Tooltip(tooltip_html, sticky=True),
                         icon=folium.Icon(color=colour, icon="exclamation-sign"),
                     ).add_to(cluster)
 
@@ -668,6 +744,30 @@ with tab_map:
                 st.markdown(f"- `{cls}`: **{cnt}**")
 
         st.write("---")
+
+        # ── Photo Evidence Gallery ──
+        if not filtered_df.empty:
+            with st.expander("🖼️ View Photo Evidence Gallery (Current Filtered Reports)", expanded=False):
+                st.caption("Inspect the original field photos uploaded for each pollution report.")
+                gal_reports = filtered_df.head(12)
+                gal_cols = st.columns(4)
+                for idx, (_, g_row) in enumerate(gal_reports.iterrows()):
+                    with gal_cols[idx % 4]:
+                        g_img_b64 = get_report_image_b64(
+                            g_row.get("image_path", ""),
+                            g_row.get("predicted_class", "plastic"),
+                        )
+                        if g_img_b64:
+                            st.markdown(
+                                f"""
+                                <div style="background:rgba(255,255,255,0.03); border:1px solid #30363d; border-radius:8px; padding:6px; margin-bottom:10px;">
+                                    <img src="data:image/jpeg;base64,{g_img_b64}" style="width:100%; height:120px; object-fit:cover; border-radius:6px; margin-bottom:6px;" />
+                                    <div style="font-size:12px; font-weight:700;">#{int(g_row['id'])} {g_row['predicted_class'].capitalize()}</div>
+                                    <div style="font-size:11px; color:#888;">{g_row['severity']} • {float(g_row['confidence']):.0%}</div>
+                                </div>
+                                """,
+                                unsafe_allow_html=True,
+                            )
 
         # ── Reports Log Table & Data Export ──
         log_col1, log_col2 = st.columns([2.5, 1.5])
