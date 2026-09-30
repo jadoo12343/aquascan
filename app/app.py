@@ -26,6 +26,7 @@ sys.path.insert(0, str(ROOT))
 from app.db import (
     init_db, add_report, get_reports_df, get_report_count,
     get_severity_summary, seed_demo_reports, clear_all_reports,
+    export_geojson, delete_report, get_stats_summary,
 )
 from model.mock import mock_predict as predict_image
 from model.severity import get_severity
@@ -151,8 +152,7 @@ with st.sidebar:
         4. **Explore Hotspots:** View logged reports on the map.
         """
     )
-    st.write("---")
-    st.caption("🤖 Classifier: Mock stub active — awaiting EfficientNetB0 from Person A (Day 7 checkpoint)")
+    st.caption("🤖 Classifier: Mock stub active (Day 10 — GIS GeoJSON export & management ready)")
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -603,6 +603,16 @@ with tab_map:
             st.markdown("#### 📊 Filtered Overview")
             st.metric("Displayed Reports", f"{len(filtered_df)} / {len(df)}")
 
+            # Municipal Priority Indicator (Critical + High share)
+            if not filtered_df.empty:
+                high_risk = len(filtered_df[filtered_df["severity"].isin(["Critical", "High"])])
+                high_risk_ratio = high_risk / len(filtered_df)
+                st.metric(
+                    "High-Risk Ratio",
+                    f"{high_risk_ratio:.0%}",
+                    help="Percentage of filtered reports requiring immediate or urgent cleanup dispatch (Critical & High priority).",
+                )
+
             st.markdown("**By Severity**")
             sev_counts = filtered_df["severity"].value_counts()
             for sev in ["Critical", "High", "Medium", "Low"]:
@@ -622,19 +632,31 @@ with tab_map:
         st.write("---")
 
         # ── Reports Log Table & Data Export ──
-        log_col1, log_col2 = st.columns([3, 1])
+        log_col1, log_col2 = st.columns([2.5, 1.5])
         with log_col1:
             st.markdown("#### 📋 Field Reports Log")
         with log_col2:
             if not filtered_df.empty:
-                csv_bytes = filtered_df.to_csv(index=False).encode("utf-8")
-                st.download_button(
-                    label="📥 Export CSV",
-                    data=csv_bytes,
-                    file_name="aquascan_waterway_reports.csv",
-                    mime="text/csv",
-                    use_container_width=True,
-                )
+                btn_col1, btn_col2 = st.columns(2)
+                with btn_col1:
+                    csv_bytes = filtered_df.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        label="📥 CSV",
+                        data=csv_bytes,
+                        file_name="aquascan_waterway_reports.csv",
+                        mime="text/csv",
+                        use_container_width=True,
+                    )
+                with btn_col2:
+                    geojson_str = export_geojson(filtered_df)
+                    st.download_button(
+                        label="🗺️ GeoJSON",
+                        data=geojson_str,
+                        file_name="aquascan_waterway_reports.geojson",
+                        mime="application/geo+json",
+                        help="Standard RFC 7946 GeoJSON format for QGIS, ArcGIS, Mapbox, or Google Earth.",
+                        use_container_width=True,
+                    )
 
         if not filtered_df.empty:
             display_df = filtered_df[
@@ -645,6 +667,28 @@ with tab_map:
             ]
             display_df["Confidence"] = display_df["Confidence"].apply(lambda x: f"{x:.0%}")
             st.dataframe(display_df, use_container_width=True, hide_index=True)
+
+            # ── Admin Single-Report Management ──
+            with st.expander("🛠️ Manage Individual Reports (Delete by ID)", expanded=False):
+                st.caption("Select a report ID to remove test or erroneous field submissions.")
+                del_c1, del_c2 = st.columns([2, 1])
+                with del_c1:
+                    available_ids = sorted(df["id"].tolist(), reverse=True)
+                    target_id = st.selectbox(
+                        "Report ID to Remove",
+                        options=available_ids,
+                        key="delete_target_id",
+                    )
+                with del_c2:
+                    st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+                    if st.button("🗑️ Delete Report", type="secondary", use_container_width=True):
+                        if target_id is not None:
+                            ok = delete_report(int(target_id))
+                            if ok:
+                                st.toast(f"Report #{target_id} deleted successfully.", icon="🗑️")
+                                st.rerun()
+                            else:
+                                st.error(f"Could not delete report #{target_id}.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -8,6 +8,7 @@ Schema:
 
 import sqlite3
 import os
+import json
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
@@ -128,12 +129,14 @@ def get_report_count() -> int:
     return count
 
 
-def delete_report(report_id: int) -> None:
-    """Delete a single report by its id. Used for admin cleanup."""
+def delete_report(report_id: int) -> bool:
+    """Delete a single report by its id. Returns True if a row was deleted."""
     conn = _get_connection()
-    conn.execute("DELETE FROM reports WHERE id = ?", (report_id,))
+    cursor = conn.execute("DELETE FROM reports WHERE id = ?", (report_id,))
+    deleted = cursor.rowcount > 0
     conn.commit()
     conn.close()
+    return deleted
 
 
 def clear_all_reports() -> None:
@@ -160,6 +163,81 @@ def get_severity_summary() -> dict[str, int]:
         if sev in counts:
             counts[sev] = row["count"]
     return counts
+
+
+def get_stats_summary() -> dict:
+    """
+    Return high-level summary metrics across all reports for dashboard KPIs:
+    - total_reports: int
+    - high_risk_pct: float (Critical + High share, 0.0–1.0)
+    - top_class: str
+    - last_report_time: str or None
+    """
+    df = get_reports_df()
+    if df.empty:
+        return {
+            "total_reports": 0,
+            "high_risk_pct": 0.0,
+            "top_class": "N/A",
+            "last_report_time": None,
+        }
+    
+    total = len(df)
+    high_risk_count = len(df[df["severity"].isin(["Critical", "High"])])
+    high_risk_pct = round(high_risk_count / total, 3) if total > 0 else 0.0
+    top_class = df["predicted_class"].mode().iloc[0] if not df["predicted_class"].empty else "N/A"
+    last_time = df["timestamp"].iloc[0] if "timestamp" in df.columns and not df.empty else None
+
+    return {
+        "total_reports": total,
+        "high_risk_pct": high_risk_pct,
+        "top_class": str(top_class).capitalize(),
+        "last_report_time": last_time,
+    }
+
+
+def export_geojson(df: pd.DataFrame = None) -> str:
+    """
+    Export reports to an RFC 7946 compliant GeoJSON FeatureCollection string,
+    enabling direct drag-and-drop ingestion into municipal GIS tools (QGIS, ArcGIS, Mapbox).
+    """
+    if df is None:
+        df = get_reports_df()
+
+    features = []
+    for _, row in df.iterrows():
+        try:
+            lat = float(row["lat"])
+            lon = float(row["lon"])
+        except (ValueError, TypeError):
+            continue
+
+        feature = {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [round(lon, 6), round(lat, 6)],  # GeoJSON standard is [longitude, latitude]
+            },
+            "properties": {
+                "id": int(row["id"]),
+                "predicted_class": str(row["predicted_class"]),
+                "confidence": round(float(row["confidence"]), 4),
+                "severity": str(row["severity"]),
+                "timestamp": str(row["timestamp"]) if pd.notna(row.get("timestamp")) else "",
+            },
+        }
+        features.append(feature)
+
+    collection = {
+        "type": "FeatureCollection",
+        "name": "AquaScan_Waterway_Pollution_Reports",
+        "crs": {
+            "type": "name",
+            "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"},
+        },
+        "features": features,
+    }
+    return json.dumps(collection, indent=2)
 
 
 def seed_demo_reports(force: bool = False) -> int:
