@@ -1,16 +1,7 @@
----
-title: AquaScan — Waterway Pollution Reporter
-emoji: 🌊
-colorFrom: blue
-colorTo: green
-sdk: streamlit
-sdk_version: 1.38.0
-app_file: app.py
-pinned: false
-license: mit
----
+<div align="center">
 
-# AquaScan — AI Waterway Pollution Reporter
+# 🌊 AquaScan
+### AI-Powered Waterway Pollution Reporter & Geospatial Hotspot Tracker
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.16%2B-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)](https://tensorflow.org)
@@ -18,8 +9,11 @@ license: mit
 [![HuggingFace Spaces](https://img.shields.io/badge/Deploy-HuggingFace%20Spaces-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/spaces)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-> **Devpost ML Empowerment Build Challenge** | Category: **Sustainability AI**  
-> An explainable, geospatial AI platform enabling community volunteers, conservation NGOs, and municipal teams to detect, classify, and prioritize aquatic pollution before it enters open oceans.
+**Devpost ML Empowerment Build Challenge** | Category: **Sustainability AI**
+
+*An explainable, geospatial AI platform enabling community volunteers, conservation NGOs, and municipal teams to detect, classify, and prioritize aquatic pollution before it enters open oceans.*
+
+</div>
 
 ---
 
@@ -161,7 +155,7 @@ If you are evaluating AquaScan, you can test the full end-to-end pipeline in und
 
 ---
 
-## 7. Dataset & Storage Convention
+## 8. Dataset & Storage Convention
 
 > **Important for anyone cloning this repo:** The `data/` directory is git-ignored to prevent large image files from bloating the repository. Follow the instructions below to source the dataset locally.
 
@@ -200,7 +194,7 @@ aquascan/
 
 ---
 
-## 8. Model Evaluation & Explainability (Grad-CAM)
+## 9. Model Evaluation & Explainability (Grad-CAM)
 
 AquaScan includes an in-app empirical evaluation suite (Tab 3) adhering to responsible AI reporting:
 - **Test Set Size:** 1,200 curated test images across 6 target classes.
