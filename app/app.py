@@ -68,13 +68,13 @@ st.markdown(
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
     }
 
-    /* Ambient Ocean Deep Background */
+    /* Ambient Ocean Deep Background — teal + violet glows */
     .stApp {
-        background: 
-            radial-gradient(circle at 10% 12%, rgba(14, 116, 144, 0.18), transparent 35%),
-            radial-gradient(circle at 90% 80%, rgba(37, 99, 235, 0.15), transparent 40%),
-            radial-gradient(circle at 50% 45%, rgba(15, 23, 42, 0.85), transparent 65%),
-            #070a12 !important;
+        background:
+            radial-gradient(circle at 10% 12%, rgba(13, 148, 136, 0.16), transparent 35%),
+            radial-gradient(circle at 88% 78%, rgba(109, 40, 217, 0.13), transparent 40%),
+            radial-gradient(circle at 55% 48%, rgba(15, 23, 42, 0.80), transparent 65%),
+            #060c10 !important;
         background-attachment: fixed !important;
         color: #f1f5f9;
     }
@@ -130,12 +130,12 @@ st.markdown(
         transform: translateY(-1px) !important;
     }
 
-    /* Active Selected Tab Pill */
+    /* Active Selected Tab — teal to emerald */
     button[data-baseweb="tab"][aria-selected="true"] {
-        background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%) !important;
+        background: linear-gradient(135deg, #0d9488 0%, #059669 100%) !important;
         color: #ffffff !important;
-        border: 1px solid rgba(255, 255, 255, 0.25) !important;
-        box-shadow: 0 4px 18px rgba(14, 165, 233, 0.42) !important;
+        border: 1px solid rgba(255, 255, 255, 0.22) !important;
+        box-shadow: 0 4px 18px rgba(13, 148, 136, 0.40) !important;
         transform: translateY(-1px) !important;
     }
 
@@ -153,8 +153,8 @@ st.markdown(
     .stButton > button:hover {
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
-        border-color: rgba(56, 189, 248, 0.5) !important;
-        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(45, 212, 191, 0.45) !important;
+        background: rgba(255, 255, 255, 0.07) !important;
         color: #ffffff !important;
     }
 
@@ -162,17 +162,17 @@ st.markdown(
         transform: translateY(0px) !important;
     }
 
-    /* Primary Accent Button */
+    /* Primary Accent Button — teal to indigo */
     .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #0284c7, #2563eb) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35) !important;
+        background: linear-gradient(135deg, #0d9488, #4f46e5) !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.30) !important;
         color: #ffffff !important;
     }
 
     .stButton > button[kind="primary"]:hover {
-        box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55) !important;
-        border-color: rgba(255, 255, 255, 0.4) !important;
+        box-shadow: 0 6px 24px rgba(79, 70, 229, 0.50) !important;
+        border-color: rgba(255, 255, 255, 0.35) !important;
     }
 
     /* Metric Cards Glass Polish */
@@ -186,24 +186,24 @@ st.markdown(
     }
 
     [data-testid="stMetric"]:hover {
-        border-color: rgba(56, 189, 248, 0.35) !important;
+        border-color: rgba(45, 212, 191, 0.30) !important;
         transform: translateY(-1px) !important;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
     }
 
     /* File Uploader styling */
     [data-testid="stFileUploader"] section {
-        background: rgba(15, 23, 42, 0.45) !important;
-        border: 1.5px dashed rgba(56, 189, 248, 0.35) !important;
+        background: rgba(10, 18, 28, 0.50) !important;
+        border: 1.5px dashed rgba(45, 212, 191, 0.30) !important;
         border-radius: 14px !important;
         transition: all 0.22s ease !important;
         padding: 16px !important;
     }
 
     [data-testid="stFileUploader"] section:hover {
-        border-color: #38bdf8 !important;
-        background: rgba(15, 23, 42, 0.7) !important;
-        box-shadow: 0 0 20px rgba(56, 189, 248, 0.15) !important;
+        border-color: #2dd4bf !important;
+        background: rgba(10, 18, 28, 0.72) !important;
+        box-shadow: 0 0 20px rgba(45, 212, 191, 0.12) !important;
     }
 
     /* Expanders styling */
@@ -305,32 +305,46 @@ with st.sidebar:
     # ── Sidebar Brand Header ──
     st.markdown(
         """
-        <div style="display:flex; align-items:center; gap:10px; padding:2px 0 14px 0; border-bottom:1px solid rgba(255,255,255,0.08); margin-bottom:16px;">
-            <span style="font-size:1.8rem; filter:drop-shadow(0 2px 6px rgba(56,189,248,0.5));">🌊</span>
-            <div>
-                <div style="font-size:1.2rem; font-weight:800; background:linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">AquaScan</div>
-                <div style="font-size:0.70rem; color:#64748b; font-weight:700; letter-spacing:0.8px;">SYSTEM DASHBOARD</div>
+        <div style="display:flex; align-items:center; gap:10px; padding:12px 14px 12px 14px;
+                    background:linear-gradient(135deg, rgba(14,116,144,0.18), rgba(30,58,138,0.12));
+                    border:1px solid rgba(56,189,248,0.18); border-radius:12px;
+                    margin-bottom:14px; box-sizing:border-box;">
+            <span style="font-size:1.6rem; flex-shrink:0; filter:drop-shadow(0 2px 6px rgba(56,189,248,0.55));">🌊</span>
+            <div style="min-width:0;">
+                <div style="font-size:1.15rem; font-weight:800; white-space:nowrap;
+                            background:linear-gradient(90deg, #38bdf8, #818cf8);
+                            -webkit-background-clip:text; -webkit-text-fill-color:transparent;">AquaScan</div>
+                <div style="font-size:0.68rem; color:#64748b; font-weight:700; letter-spacing:0.8px; white-space:nowrap;">SYSTEM DASHBOARD</div>
+            </div>
+            <div style="margin-left:auto; flex-shrink:0;">
+                <span style="display:inline-flex; align-items:center; gap:5px; font-size:0.72rem;
+                            color:#34d399; font-weight:700; background:rgba(52,211,153,0.1);
+                            border:1px solid rgba(52,211,153,0.25); border-radius:20px; padding:3px 9px;">
+                    <span style="width:5px; height:5px; background:#34d399; border-radius:50%; box-shadow:0 0 6px #34d399;"></span>LIVE
+                </span>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # ── Live Status Indicator Card ──
+    # ── System Status Row ──
     st.markdown(
         """
-        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px 14px; margin-bottom:14px; backdrop-filter:blur(8px);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <span style="font-size:0.78rem; color:#94a3b8; font-weight:600;">Frontend UI</span>
-                <span style="display:inline-flex; align-items:center; gap:6px; font-size:0.78rem; color:#34d399; font-weight:700;">
-                    <span style="width:6px; height:6px; background:#34d399; border-radius:50%; box-shadow:0 0 8px #34d399;"></span> Active
-                </span>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; box-sizing:border-box;">
+            <div style="background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.2);
+                        border-radius:10px; padding:10px 12px; box-sizing:border-box;">
+                <div style="font-size:0.68rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">UI Status</div>
+                <div style="display:inline-flex; align-items:center; gap:5px; font-size:0.80rem; color:#34d399; font-weight:700; margin-top:3px;">
+                    <span style="width:5px; height:5px; background:#34d399; border-radius:50%; box-shadow:0 0 6px #34d399;"></span>Active
+                </div>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:0.78rem; color:#94a3b8; font-weight:600;">Incident DB</span>
-                <span style="display:inline-flex; align-items:center; gap:6px; font-size:0.78rem; color:#38bdf8; font-weight:700;">
-                    <span style="width:6px; height:6px; background:#38bdf8; border-radius:50%; box-shadow:0 0 8px #38bdf8;"></span> SQLite Live
-                </span>
+            <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.2);
+                        border-radius:10px; padding:10px 12px; box-sizing:border-box;">
+                <div style="font-size:0.68rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Database</div>
+                <div style="display:inline-flex; align-items:center; gap:5px; font-size:0.80rem; color:#38bdf8; font-weight:700; margin-top:3px;">
+                    <span style="width:5px; height:5px; background:#38bdf8; border-radius:50%; box-shadow:0 0 6px #38bdf8;"></span>SQLite
+                </div>
             </div>
         </div>
         """,
@@ -352,8 +366,6 @@ with st.sidebar:
         <div style="background:linear-gradient(135deg, rgba(14,165,233,0.12), rgba(30,58,138,0.15)); border:1px solid rgba(56,189,248,0.25); border-radius:12px; padding:14px 16px; margin-bottom:14px;">
             <div style="font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">📋 Total Incidents Logged</div>
             <div style="font-size:2.1rem; font-weight:800; color:#f8fafc; line-height:1.2; margin-top:2px;">{report_count}</div>
-            
-            <!-- Severity Multi-color Distribution Bar -->
             <div style="display:flex; height:6px; border-radius:3px; overflow:hidden; margin-top:10px; background:rgba(255,255,255,0.08);">
                 <div style="width:{crit_pct}%; background:#f85149;" title="Critical"></div>
                 <div style="width:{high_pct}%; background:#d29922;" title="High"></div>
@@ -366,25 +378,25 @@ with st.sidebar:
     )
 
     # ── Severity Breakdown Cards ──
-    st.markdown("<div style='font-size:0.78rem; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;'>Priority Distribution</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:0.75rem; color:#64748b; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px;'>Priority Distribution</div>", unsafe_allow_html=True)
     st.markdown(
         f"""
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:16px;">
-            <div style="background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.25); border-radius:8px; padding:8px 10px;">
-                <div style="font-size:0.72rem; color:#f85149; font-weight:700;">🚨 CRITICAL</div>
-                <div style="font-size:1.25rem; font-weight:800; color:#ffffff; margin-top:1px;">{sev_summary['Critical']}</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:14px; width:100%; box-sizing:border-box;">
+            <div style="background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.28); border-radius:10px; padding:10px 12px; box-sizing:border-box;">
+                <div style="font-size:0.68rem; color:#f85149; font-weight:700; letter-spacing:0.3px;">🚨 CRITICAL</div>
+                <div style="font-size:1.45rem; font-weight:800; color:#ffffff; margin-top:2px; line-height:1;">{sev_summary['Critical']}</div>
             </div>
-            <div style="background:rgba(210,153,34,0.08); border:1px solid rgba(210,153,34,0.25); border-radius:8px; padding:8px 10px;">
-                <div style="font-size:0.72rem; color:#d29922; font-weight:700;">⚡ HIGH</div>
-                <div style="font-size:1.25rem; font-weight:800; color:#ffffff; margin-top:1px;">{sev_summary['High']}</div>
+            <div style="background:rgba(210,153,34,0.08); border:1px solid rgba(210,153,34,0.28); border-radius:10px; padding:10px 12px; box-sizing:border-box;">
+                <div style="font-size:0.68rem; color:#d29922; font-weight:700; letter-spacing:0.3px;">⚡ HIGH</div>
+                <div style="font-size:1.45rem; font-weight:800; color:#ffffff; margin-top:2px; line-height:1;">{sev_summary['High']}</div>
             </div>
-            <div style="background:rgba(56,139,253,0.08); border:1px solid rgba(56,139,253,0.25); border-radius:8px; padding:8px 10px;">
-                <div style="font-size:0.72rem; color:#388bfd; font-weight:700;">⚠️ MEDIUM</div>
-                <div style="font-size:1.25rem; font-weight:800; color:#ffffff; margin-top:1px;">{sev_summary['Medium']}</div>
+            <div style="background:rgba(56,139,253,0.08); border:1px solid rgba(56,139,253,0.28); border-radius:10px; padding:10px 12px; box-sizing:border-box;">
+                <div style="font-size:0.68rem; color:#388bfd; font-weight:700; letter-spacing:0.3px;">⚠️ MEDIUM</div>
+                <div style="font-size:1.45rem; font-weight:800; color:#ffffff; margin-top:2px; line-height:1;">{sev_summary['Medium']}</div>
             </div>
-            <div style="background:rgba(63,185,80,0.08); border:1px solid rgba(63,185,80,0.25); border-radius:8px; padding:8px 10px;">
-                <div style="font-size:0.72rem; color:#3fb950; font-weight:700;">🌱 LOW</div>
-                <div style="font-size:1.25rem; font-weight:800; color:#ffffff; margin-top:1px;">{sev_summary['Low']}</div>
+            <div style="background:rgba(63,185,80,0.08); border:1px solid rgba(63,185,80,0.28); border-radius:10px; padding:10px 12px; box-sizing:border-box;">
+                <div style="font-size:0.68rem; color:#3fb950; font-weight:700; letter-spacing:0.3px;">🌱 LOW</div>
+                <div style="font-size:1.45rem; font-weight:800; color:#ffffff; margin-top:2px; line-height:1;">{sev_summary['Low']}</div>
             </div>
         </div>
         """,
@@ -403,6 +415,7 @@ with st.sidebar:
         st.toast("Database cleared", icon="🧹")
         st.rerun()
 
+    # ── LLM Settings ──
     st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
     with st.expander("🔑 LLM Settings (Groq API)", expanded=False):
         st.caption("Optional: Set a key from [console.groq.com](https://console.groq.com) for real-time LLaMA 3.1 ecological guidance.")
@@ -416,16 +429,6 @@ with st.sidebar:
         )
         if groq_input != st.session_state.get("groq_api_key", ""):
             st.session_state["groq_api_key"] = groq_input
-
-    with st.expander("📌 Quick Workflow Guide", expanded=False):
-        st.markdown(
-            """
-            1. **Scan & Report:** Upload a photo or click a demo sample.
-            2. **Set Location:** Click the map, pick a preset, or detect GPS.
-            3. **Submit:** Save the report to SQLite database.
-            4. **Explore Hotspots:** Inspect clusters and heatmaps.
-            """
-        )
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -442,45 +445,21 @@ st.markdown(
         backdrop-filter: blur(14px);
         box-shadow: 0 10px 30px -10px rgba(0,0,0,0.55);
     ">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <span style="font-size:2.4rem; filter: drop-shadow(0 2px 10px rgba(56,189,248,0.55));">🌊</span>
             <div>
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="font-size:2.4rem; filter: drop-shadow(0 2px 10px rgba(56,189,248,0.55));">🌊</span>
-                    <h1 style="
-                        margin:0;
-                        font-size:2.2rem;
-                        font-weight:800;
-                        background: linear-gradient(90deg, #38bdf8, #818cf8, #34d399);
-                        -webkit-background-clip: text;
-                        -webkit-text-fill-color: transparent;
-                        letter-spacing: -0.5px;
-                    ">AquaScan</h1>
-                    <span style="
-                        background: rgba(56, 189, 248, 0.15);
-                        border: 1px solid rgba(56, 189, 248, 0.35);
-                        color: #38bdf8;
-                        padding: 3px 10px;
-                        border-radius: 20px;
-                        font-size: 0.75rem;
-                        font-weight: 700;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                    ">Devpost ML Challenge</span>
-                </div>
-                <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 0.95rem; font-weight: 400;">
-                    AI Waterway Pollution Intelligence • Explainable Vision (Grad-CAM) • Geospatial Hotspots
+                <h1 style="
+                    margin:0;
+                    font-size:2.2rem;
+                    font-weight:800;
+                    background: linear-gradient(90deg, #38bdf8, #818cf8, #34d399);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    letter-spacing: -0.5px;
+                ">AquaScan</h1>
+                <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 0.95rem; font-weight: 400;">
+                    AI Waterway Pollution Intelligence &bull; Explainable Vision (Grad-CAM) &bull; Geospatial Hotspots
                 </p>
-            </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <span style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 12px; font-size:0.8rem; color:#cbd5e1; font-weight:500;">
-                    🧠 EfficientNetB0
-                </span>
-                <span style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 12px; font-size:0.8rem; color:#cbd5e1; font-weight:500;">
-                    🔬 Grad-CAM (top_conv)
-                </span>
-                <span style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 12px; font-size:0.8rem; color:#cbd5e1; font-weight:500;">
-                    🤖 Groq LLaMA 3.1
-                </span>
             </div>
         </div>
     </div>
