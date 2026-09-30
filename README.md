@@ -12,8 +12,14 @@ license: mit
 
 # AquaScan — AI Waterway Pollution Reporter
 
-> **ML Empowerment Build Challenge** | Target Category: **Sustainability AI**  
-> An explainable, geospatial AI platform enabling community volunteers and municipal teams to detect, classify, and prioritize aquatic pollution before it enters open waterways.
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.16%2B-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)](https://tensorflow.org)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.38%2B-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
+[![HuggingFace Spaces](https://img.shields.io/badge/Deploy-HuggingFace%20Spaces-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/spaces)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
+> **Devpost ML Empowerment Build Challenge** | Category: **Sustainability AI**  
+> An explainable, geospatial AI platform enabling community volunteers, conservation NGOs, and municipal teams to detect, classify, and prioritize aquatic pollution before it enters open oceans.
 
 ---
 
@@ -48,17 +54,28 @@ Over 8 million metric tons of waste enter aquatic ecosystems annually, yet munic
 ## 4. Repository Structure
 ```
 aquascan/
-├── .gitignore            # Ignores large datasets, venv, model weights, secrets
-├── README.md             # Project documentation & setup instructions
-├── requirements.txt      # Python dependencies for the application
-├── app/                  # Frontend, mapping & backend logic (Person B)
-│   ├── app.py            # Streamlit dashboard, Folium clustering & heatmap
-│   └── db.py             # SQLite persistence, aggregation & demo seeder
-├── model/                # Model inference, evaluation & Grad-CAM (Person A)
-│   ├── eval.py           # Evaluation benchmarks, confusion matrix & Grad-CAM lab
-│   └── mock.py           # Classifier contract stub (Days 1–6)
-├── notebooks/            # Exploratory data analysis & prototyping notebooks
-└── data/                 # Local uploads, SQLite database & datasets (git-ignored)
+├── .gitignore            # Ignores datasets, venv, model weights, API secrets
+├── README.md             # Project documentation, setup guide & architecture
+├── requirements.txt      # Application & ML dependencies (TensorFlow, Streamlit, Folium)
+├── app.py                # Hugging Face Spaces entrypoint shim
+├── app/                  # Frontend, geospatial mapping & database logic
+│   ├── app.py            # Streamlit dashboard (Scan, Map, Model Metrics, Export)
+│   └── db.py             # SQLite persistence, spatial aggregation & GeoJSON export
+├── model/                # Model inference, Grad-CAM, training & evaluation
+│   ├── predict.py        # EfficientNetB0 inference + Top-3 probability calibration
+│   ├── gradcam.py        # Grad-CAM heatmap extraction from 'top_conv' layer
+│   ├── train.py          # 2-Phase transfer learning pipeline (frozen + fine-tune)
+│   ├── prepare_dataset.py# Merges & formats Kaggle/TrashNet/TACO datasets
+│   ├── severity.py       # Ecological risk scoring matrix per debris class
+│   ├── narration.py      # Groq LLaMA 3.1 ecological guidance layer
+│   ├── eval.py           # Benchmark metrics, confusion matrix & Grad-CAM lab
+│   ├── mock.py           # Offline fallback mock generator
+│   └── weights/          # Storage for efficientnetb0_aquascan.h5 (git-ignored)
+├── notebooks/            # Jupyter training pipelines & EDA
+│   └── training_pipeline.ipynb # Google Colab T4-ready training pipeline
+└── data/                 # SQLite database & uploaded images (git-ignored)
+    ├── aquascan.db       # Seeded pollution reports database
+    └── uploads/          # Geo-tagged debris images
 ```
 
 ---
@@ -116,7 +133,30 @@ AquaScan is pre-configured for instant zero-cost hosting on Hugging Face Spaces:
 
 ---
 
-## 6. Architecture & Frontend Decision
+## 6. 🚀 60-Second Judge Demo Tour
+
+If you are evaluating AquaScan, you can test the full end-to-end pipeline in under a minute without uploading your own images:
+
+1. **Scan Tab (Classification & Inference):**
+   - Click one of the instant demo buttons (e.g., `🧴 Plastic Bottle` or `🥫 Metal Can`).
+   - Observe the **EfficientNetB0 classification card** and the **Top-3 Confidence probability breakdown**.
+   - Notice the **Groq LLaMA 3.1 Ecological Guidance** explaining environmental degradation and toxicity.
+   - Click the map to drop a pin or pick a waterway preset (e.g., *Yamuna River*), then click **✅ Save Report to Database**.
+
+2. **Pollution Map Tab (Geospatial Analytics):**
+   - Switch to the **🗺️ Pollution Map** tab.
+   - View the interactive clustered markers and dynamic heatmap showing real-time pollution density.
+   - Click any pin to inspect the original photo, detected debris category, confidence score, and timestamp.
+
+3. **Model & Metrics Tab (Explainability & Responsible AI):**
+   - Switch to **📊 Model & Metrics**.
+   - Explore the **1,200-sample test set confusion matrix** and per-class Precision/Recall/F1 scores.
+   - Switch to the **Explainability (Grad-CAM)** sub-tab to view real-time class activation heatmaps showing which pixels the convolutional layers focused on.
+   - Download the official **Model Card (`aquascan_model_card.json`)**.
+
+---
+
+## 7. Architecture & Frontend Decision
 - **Frontend Framework:** Streamlit was chosen over Gradio for AquaScan because interactive geospatial mapping (`streamlit-folium`) is a core feature for the demo and evaluation criteria (Real-World Impact 20%, UX 15%). Streamlit allows seamless integration of multi-tab layouts (Report, Map, Model Metrics) with stateful SQLite data handling in pure Python.
 
 ---

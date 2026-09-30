@@ -30,12 +30,13 @@ from app.db import (
     get_severity_summary, seed_demo_reports, clear_all_reports,
     export_geojson, delete_report, get_stats_summary,
 )
-from model.mock import mock_predict as predict_image
+from model.predict import predict_image, predict_proba
+from model.gradcam import explain_prediction
 from model.severity import get_severity
 from model.narration import get_explanation
 from model.eval import (
     get_per_class_metrics, plot_confusion_matrix,
-    generate_gradcam_simulation, get_model_card_json, BENCHMARK_SUMMARY,
+    get_model_card_json, BENCHMARK_SUMMARY,
     create_demo_waterway_image,
 )
 
@@ -190,7 +191,7 @@ with st.sidebar:
         4. **Explore Hotspots:** View logged reports on the map.
         """
     )
-    st.caption("🤖 Classifier: Mock stub active (Day 10 — GIS GeoJSON export & management ready)")
+    st.caption("🤖 Person A pipeline ready: predict.py + Grad-CAM + train.py. Place weights at model/weights/efficientnetb0_aquascan.h5 to activate real model.")
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -219,21 +220,71 @@ with tab_scan:
             f"({sub['lat']:.4f}, {sub['lon']:.4f}). View it on the **🗺️ Pollution Map** tab."
         )
 
-    # ── Image Upload ─────────────────────────────────────────────────────────
+    # ── Image Upload or Demo Selection ───────────────────────────────────────
     uploaded_file = st.file_uploader(
         "Choose an image of waste found near a waterway…",
         type=["jpg", "jpeg", "png"],
         key="uploader",
     )
 
+    st.markdown("**🧪 Or try a demo sample (instant one-click test):**")
+    dcol1, dcol2, dcol3, dcol4 = st.columns([1, 1, 1, 0.8])
+    with dcol1:
+        if st.button("🧴 Plastic Bottle", use_container_width=True, help="Load synthetic plastic bottle sample"):
+            st.session_state["demo_sample"] = "plastic"
+            st.session_state.pop("active_upload", None)
+            st.session_state.pop("override_class", None)
+            st.rerun()
+    with dcol2:
+        if st.button("🥫 Metal Can", use_container_width=True, help="Load synthetic metal can sample"):
+            st.session_state["demo_sample"] = "metal"
+            st.session_state.pop("active_upload", None)
+            st.session_state.pop("override_class", None)
+            st.rerun()
+    with dcol3:
+        if st.button("🍾 Glass Bottle", use_container_width=True, help="Load synthetic glass bottle sample"):
+            st.session_state["demo_sample"] = "glass"
+            st.session_state.pop("active_upload", None)
+            st.session_state.pop("override_class", None)
+            st.rerun()
+    with dcol4:
+        if st.session_state.get("demo_sample") or uploaded_file:
+            if st.button("🔄 Reset", use_container_width=True, help="Clear active sample"):
+                st.session_state.pop("demo_sample", None)
+                st.session_state.pop("active_upload", None)
+                st.session_state.pop("active_upload_name", None)
+                st.session_state.pop("active_img", None)
+                st.session_state.pop("active_pred", None)
+                st.session_state.pop("override_class", None)
+                st.rerun()
+
+    # Determine active image source
+    active_source = None
+    upload_signature = None
+    upload_filename = "sample.jpg"
+
     if uploaded_file is not None:
-        # Cache prediction per upload so interactions (presets, inputs) don't re-roll random mock predictions
+        active_source = "upload"
         upload_signature = f"{uploaded_file.name}_{uploaded_file.size}"
+        upload_filename = uploaded_file.name
+        st.session_state.pop("demo_sample", None)
+    elif "demo_sample" in st.session_state:
+        active_source = "demo"
+        demo_name = st.session_state["demo_sample"]
+        upload_signature = f"demo_{demo_name}"
+        upload_filename = f"demo_{demo_name}.jpg"
+
+    if active_source is not None:
+        # Cache prediction per upload so interactions (presets, inputs) don't re-roll predictions
         if (
             "active_upload" not in st.session_state
             or st.session_state["active_upload"] != upload_signature
         ):
-            img = Image.open(uploaded_file).convert("RGB")
+            if active_source == "upload":
+                img = Image.open(uploaded_file).convert("RGB")
+            else:
+                img = create_demo_waterway_image(st.session_state["demo_sample"])
+
             pred_raw = predict_image(img)
 
             # Defensive unpacking: handles (class, conf) or (class, conf, sev) or (class, conf, heatmap, sev)
@@ -244,22 +295,27 @@ with tab_scan:
             else:
                 p_class, conf, sev = "plastic", 0.90, "Critical"
 
+            probs = predict_proba(img, top_class=p_class, top_conf=conf)
             active_key = st.session_state.get("groq_api_key") or os.environ.get("GROQ_API_KEY")
             explanation, is_ai = get_explanation(p_class, conf, sev, api_key=active_key)
 
             st.session_state["active_upload"] = upload_signature
+            st.session_state["active_upload_name"] = upload_filename
             st.session_state["active_img"] = img
-            st.session_state["active_pred"] = (p_class, conf, sev, explanation, is_ai)
+            st.session_state["active_pred"] = (p_class, conf, sev, explanation, is_ai, probs)
             # Reset any previous manual override when a fresh image is loaded
             st.session_state.pop("override_class", None)
 
         image = st.session_state["active_img"]
-        predicted_class, confidence, severity, explanation, is_ai = st.session_state["active_pred"]
+        pred_tuple = st.session_state["active_pred"]
+        predicted_class, confidence, severity, explanation, is_ai = pred_tuple[:5]
+        probs = pred_tuple[5] if len(pred_tuple) > 5 else predict_proba(image, top_class=predicted_class, top_conf=confidence)
 
         col_img, col_result = st.columns([1, 1], gap="large")
 
         with col_img:
-            st.image(image, caption="📷 Uploaded Image", use_container_width=True)
+            caption_text = "📷 Uploaded Image" if active_source == "upload" else f"🧪 Demo Sample ({st.session_state.get('demo_sample', '').capitalize()})"
+            st.image(image, caption=caption_text, use_container_width=True)
 
         with col_result:
             st.markdown("#### 🤖 AI Classification Result")
@@ -296,6 +352,50 @@ with tab_scan:
                 """,
                 unsafe_allow_html=True,
             )
+
+            # Top-3 Confidence Distribution
+            sorted_probs = sorted(probs.items(), key=lambda x: x[1], reverse=True)
+            top3 = sorted_probs[:3]
+
+            bars_html = "".join([
+                f"""
+                <div style="margin-bottom: 7px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:2px;">
+                        <span style="color:#e6edf3; font-weight:600;">{cls.capitalize()}</span>
+                        <span style="color:#58a6ff; font-weight:700;">{p:.1%}</span>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.08); border-radius:4px; height:7px; width:100%; overflow:hidden;">
+                        <div style="background:linear-gradient(90deg, #1f6feb, #58a6ff); width:{min(p*100, 100):.1f}%; height:100%; border-radius:4px;"></div>
+                    </div>
+                </div>
+                """
+                for cls, p in top3
+            ])
+
+            st.markdown(
+                f"""
+                <div style="
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid #30363d;
+                    border-radius: 8px;
+                    padding: 12px 14px 8px 14px;
+                    margin-bottom: 12px;
+                ">
+                    <div style="font-size:0.80rem; font-weight:600; color:#8b949e; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
+                        📊 Top Confidence Predictions
+                    </div>
+                    {bars_html}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            with st.expander("📈 View All 6 Class Probabilities"):
+                prob_df = pd.DataFrame(
+                    {"Probability": [probs.get(c, 0.0) for c in WASTE_CLASSES]},
+                    index=[c.capitalize() for c in WASTE_CLASSES]
+                )
+                st.bar_chart(prob_df, height=180)
 
             # Narrative ecological impact section with transparency badge
             if is_ai:
@@ -506,9 +606,10 @@ with tab_scan:
             )
 
         if submitted:
-            # Save the uploaded image to disk with a timestamped filename
+            # Save the uploaded or demo image to disk with a timestamped filename
             timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-            ext = Path(uploaded_file.name).suffix or ".jpg"
+            active_fname = st.session_state.get("active_upload_name") or (uploaded_file.name if uploaded_file else "sample.jpg")
+            ext = Path(active_fname).suffix or ".jpg"
             save_filename = f"{timestamp_str}_{confirmed_class}{ext}"
             save_path = UPLOAD_DIR / save_filename
 
@@ -538,15 +639,19 @@ with tab_scan:
                 "lat": lat,
                 "lon": lon,
             }
-            # Reset upload and override cache for the next submission
+            # Reset upload, demo sample, and override cache for the next submission
             st.session_state.pop("active_upload", None)
+            st.session_state.pop("active_upload_name", None)
+            st.session_state.pop("active_img", None)
+            st.session_state.pop("active_pred", None)
+            st.session_state.pop("demo_sample", None)
             st.session_state.pop("override_class", None)
             st.rerun()  # Refresh sidebar counter and database state
 
     else:
         st.info(
-            "📂 Upload a photo to begin. "
-            "The AI will classify the debris type and let you log a geo-tagged report."
+            "📂 Upload a photo or click one of the demo samples above to begin. "
+            "The AI will classify the debris type, display prediction confidence, and let you log a geo-tagged report."
         )
 
 
@@ -835,10 +940,16 @@ with tab_map:
 with tab_metrics:
     st.subheader("📊 Model Performance & Explainability Suite")
     st.caption("Evaluation preview, cross-class confusion matrix, and Grad-CAM visual attention maps.")
-    st.warning(
-        "Demo status: Person A's trained EfficientNetB0 model is not available yet. "
-        "The metrics and Grad-CAM shown here are benchmark/simulated placeholders and must be replaced with verified test results."
-    )
+    import pathlib as _pl
+    _weights_ready = (_pl.Path(__file__).parent.parent / "model" / "weights" / "efficientnetb0_aquascan.h5").exists()
+    if _weights_ready:
+        st.success("✅ Real EfficientNetB0 weights loaded — Grad-CAM uses live gradient signals.")
+    else:
+        st.warning(
+            "Demo mode: model weights not yet placed at `model/weights/efficientnetb0_aquascan.h5`. "
+            "Metrics below are benchmark placeholders; Grad-CAM falls back to Gaussian simulation. "
+            "Run `python model/train.py` to generate real weights."
+        )
 
     subtab_eval, subtab_gradcam, subtab_arch = st.tabs([
         "📈 Evaluation Benchmarks",
@@ -926,7 +1037,7 @@ with tab_metrics:
         else:
             inspect_img = create_demo_waterway_image(selected_sample)
 
-        cam_heatmap, cam_overlay = generate_gradcam_simulation(inspect_img)
+        cam_heatmap, cam_overlay = explain_prediction(inspect_img)
 
         g_col1, g_col2, g_col3 = st.columns(3, gap="medium")
         with g_col1:
