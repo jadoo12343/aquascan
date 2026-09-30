@@ -1,3 +1,15 @@
+---
+title: AquaScan — Waterway Pollution Reporter
+emoji: 🌊
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+sdk_version: 1.38.0
+app_file: app.py
+pinned: false
+license: mit
+---
+
 # AquaScan — AI Waterway Pollution Reporter
 
 > **ML Empowerment Build Challenge** | Target Category: **Sustainability AI**  
@@ -90,8 +102,17 @@ export GROQ_API_KEY="your-groq-api-key"
 
 ### 5. Run the Streamlit Application
 ```bash
+streamlit run app.py
+# or
 streamlit run app/app.py
 ```
+
+### 6. Cloud Deployment (Hugging Face Spaces)
+AquaScan is pre-configured for instant zero-cost hosting on Hugging Face Spaces:
+1. Create a new Space at [huggingface.co/new-space](https://huggingface.co/new-space) and select **Streamlit** SDK.
+2. Link your GitHub repository (`main` branch) or push directly to the Space's Git remote.
+3. *(Optional)* In **Settings > Variables and secrets**, add `GROQ_API_KEY` as a secret for real-time LLaMA 3.1 ecological guidance.
+4. The Space will automatically detect the YAML frontmatter, install `requirements.txt`, and launch `app.py`.
 
 ---
 
