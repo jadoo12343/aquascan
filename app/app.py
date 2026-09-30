@@ -38,8 +38,9 @@ from model.eval import (
 )
 
 import folium
-from folium.plugins import MarkerCluster, HeatMap
+from folium.plugins import MarkerCluster, HeatMap, LocateControl
 from streamlit_folium import st_folium
+from streamlit_js_eval import streamlit_js_eval
 
 # ────────────────────────────────────────────────────────────────────────────
 # Page Config (must be the very first Streamlit call)
@@ -336,13 +337,36 @@ with tab_scan:
                     # Clear click memory so preset always wins
                     st.session_state.pop("_last_click_sig", None)
 
-        preset_choice = st.selectbox(
-            "Quick Preset Locations (or click the map / enter custom coordinates below)",
-            options=list(GPS_PRESETS.keys()),
-            index=0,
-            key="preset_selector",
-            on_change=on_preset_change,
-        )
+        loc_row1, loc_row2 = st.columns([2.8, 1.2], gap="small")
+        with loc_row1:
+            preset_choice = st.selectbox(
+                "Quick Preset Locations (or click map / detect GPS below)",
+                options=list(GPS_PRESETS.keys()),
+                index=0,
+                key="preset_selector",
+                on_change=on_preset_change,
+            )
+        with loc_row2:
+            st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+            if st.button("📍 Detect My GPS", help="Acquire current latitude & longitude via browser location service", use_container_width=True):
+                st.session_state["_trigger_gps_detect"] = True
+
+        if st.session_state.get("_trigger_gps_detect"):
+            loc = streamlit_js_eval(
+                js_expressions="new Promise((resolve) => navigator.geolocation.getCurrentPosition((pos) => resolve({lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy}), (err) => resolve({error: err.message}), {enableHighAccuracy: true, timeout: 8000}))",
+                key="browser_gps_eval",
+            )
+            if loc:
+                st.session_state.pop("_trigger_gps_detect", None)
+                if isinstance(loc, dict) and "lat" in loc and "lon" in loc:
+                    st.session_state["lat_input"] = round(float(loc["lat"]), 4)
+                    st.session_state["lon_input"] = round(float(loc["lon"]), 4)
+                    st.session_state.pop("_last_click_sig", None)
+                    acc = round(loc.get("acc", 0))
+                    st.toast(f"📍 GPS Location: {loc['lat']:.4f}°N, {loc['lon']:.4f}°E (±{acc}m)", icon="🛰️")
+                    st.rerun()
+                elif isinstance(loc, dict) and "error" in loc:
+                    st.warning(f"⚠️ Location error: {loc['error']}. Please click directly on the map or pick a preset.")
 
         # ── Interactive Location Picker Map ──────────────────────────────────
         curr_lat = st.session_state["lat_input"]
@@ -353,6 +377,13 @@ with tab_scan:
             zoom_start=5,
             tiles="OpenStreetMap",
         )
+
+        LocateControl(
+            auto_start=False,
+            flyTo=True,
+            keepCurrentZoomLevel=False,
+            strings={"title": "📍 Focus on current GPS location"},
+        ).add_to(pin_map)
 
         # Red marker at current chosen location
         folium.Marker(
@@ -550,6 +581,13 @@ with tab_map:
             zoom_start=zoom_lvl,
             tiles="OpenStreetMap",
         )
+
+        LocateControl(
+            auto_start=False,
+            flyTo=True,
+            keepCurrentZoomLevel=False,
+            strings={"title": "📍 Show my location relative to hotspots"},
+        ).add_to(m)
 
         if not filtered_df.empty:
             # Add HeatMap layer if requested
