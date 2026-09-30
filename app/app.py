@@ -5,7 +5,7 @@ Frontend & Geospatial Mapping Interface (Person B)
 Day 2 additions:
     • Image upload saved to data/uploads/
     • GPS coordinate inputs with one-click waterway presets
-    • Mock classification pipeline (swap with model/predict.py on Day 7)
+    • Mock classification pipeline (swap with model/predict.py when Person A delivers)
     • SQLite report logging via app/db.py
     • Live report counter in sidebar
     • Folium map renders all logged reports
@@ -85,6 +85,13 @@ MARKER_COLOURS = {
     "Low":      "green",
 }
 
+# ── Confidence threshold below which user is prompted to confirm / override ──
+# Set to 0.75 for demo (mock returns 0.72–0.98); lower to 0.50 with real model.
+LOW_CONFIDENCE_THRESHOLD = 0.75
+
+# All debris classes the classifier knows — used for override dropdown
+WASTE_CLASSES = ["cardboard", "glass", "metal", "paper", "plastic", "trash"]
+
 
 # ────────────────────────────────────────────────────────────────────────────
 # Sidebar
@@ -145,7 +152,7 @@ with st.sidebar:
         """
     )
     st.write("---")
-    st.caption("🤖 Classifier: Mock stub (Day 2) — EfficientNetB0 arrives Day 7")
+    st.caption("🤖 Classifier: Mock stub active — awaiting EfficientNetB0 from Person A (Day 7 checkpoint)")
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -205,6 +212,8 @@ with tab_scan:
             st.session_state["active_upload"] = upload_signature
             st.session_state["active_img"] = img
             st.session_state["active_pred"] = (p_class, conf, sev, explanation, is_ai)
+            # Reset any previous manual override when a fresh image is loaded
+            st.session_state.pop("override_class", None)
 
         image = st.session_state["active_img"]
         predicted_class, confidence, severity, explanation, is_ai = st.session_state["active_pred"]
@@ -257,9 +266,59 @@ with tab_scan:
                 st.caption("ℹ️ **Ecological Guidance** *(Standard Waterway Protocol)*")
             st.info(explanation)
 
+        # ── Low-Confidence Warning & Manual Override ─────────────────────────
+        if confidence < LOW_CONFIDENCE_THRESHOLD:
+            st.warning(
+                f"⚠️ **Low confidence ({confidence:.0%})** — the model isn't certain about this classification. "
+                "Please retake the photo with better lighting, or confirm / correct the category below."
+            )
+
+        with st.expander(
+            "✏️ Confirm or Override Classification" +
+            (" ← Recommended (low confidence)" if confidence < LOW_CONFIDENCE_THRESHOLD else ""),
+            expanded=(confidence < LOW_CONFIDENCE_THRESHOLD),
+        ):
+            st.caption(
+                "The AI's best guess is pre-selected. Change it only if you can clearly identify "
+                "the waste type from the photo."
+            )
+            override_col, info_col = st.columns([2, 3], gap="medium")
+            with override_col:
+                override_selection = st.selectbox(
+                    "Debris Class",
+                    options=WASTE_CLASSES,
+                    index=WASTE_CLASSES.index(predicted_class) if predicted_class in WASTE_CLASSES else 0,
+                    key="override_class",
+                    help="Select the correct waste type. This overrides the AI prediction when saving.",
+                )
+            with info_col:
+                if override_selection != predicted_class:
+                    override_sev = get_severity(override_selection)
+                    override_sev_colour = SEVERITY_COLOURS.get(override_sev, "#888")
+                    st.markdown(
+                        f"Saving as **{override_selection.upper()}** "
+                        f"<span style='"
+                        f"background:{override_sev_colour}; color:#fff; "
+                        f"padding:2px 9px; border-radius:10px; font-size:0.82rem; font-weight:600;"
+                        f"'>{override_sev}</span> — overrides AI prediction.",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown(
+                        f"Using AI prediction: **{predicted_class.upper()}** — no override applied."
+                    )
+
+        # Resolve the class and severity that will be persisted
+        confirmed_class = st.session_state.get("override_class") or predicted_class
+        confirmed_severity = get_severity(confirmed_class)
+
         # ── GPS Location Section ─────────────────────────────────────────────
         st.divider()
         st.markdown("#### 📍 Report Location")
+        st.caption(
+            "🖱️ **Click anywhere on the map** to drop a pin and auto-fill coordinates, "
+            "or use a preset / type coordinates manually below."
+        )
 
         # Initialize coordinate state if not yet set
         if "lat_input" not in st.session_state:
@@ -274,15 +333,82 @@ with tab_scan:
                 if p_lat is not None and p_lon is not None:
                     st.session_state["lat_input"] = float(p_lat)
                     st.session_state["lon_input"] = float(p_lon)
+                    # Clear click memory so preset always wins
+                    st.session_state.pop("_last_click_sig", None)
 
         preset_choice = st.selectbox(
-            "Quick Preset Locations (or enter custom coordinates below)",
+            "Quick Preset Locations (or click the map / enter custom coordinates below)",
             options=list(GPS_PRESETS.keys()),
             index=0,
             key="preset_selector",
             on_change=on_preset_change,
         )
 
+        # ── Interactive Location Picker Map ──────────────────────────────────
+        curr_lat = st.session_state["lat_input"]
+        curr_lon = st.session_state["lon_input"]
+
+        pin_map = folium.Map(
+            location=[curr_lat, curr_lon],
+            zoom_start=5,
+            tiles="CartoDB dark_matter",
+        )
+
+        # Red marker at current chosen location
+        folium.Marker(
+            location=[curr_lat, curr_lon],
+            tooltip=f"📍 {curr_lat:.4f}, {curr_lon:.4f}",
+            popup=folium.Popup(
+                f"<b>Selected Location</b><br>{curr_lat:.4f}°N, {curr_lon:.4f}°E",
+                max_width=180,
+            ),
+            icon=folium.Icon(color="red", icon="record", prefix="glyphicon"),
+        ).add_to(pin_map)
+
+        map_col, hint_col = st.columns([3, 1], gap="medium")
+        with map_col:
+            map_data = st_folium(
+                pin_map,
+                key="location_picker_map",
+                use_container_width=True,
+                height=320,
+            )
+
+        with hint_col:
+            st.markdown(
+                """
+                <div style="
+                    background: rgba(255,255,255,0.04);
+                    border: 1px solid #30363d;
+                    border-radius: 10px;
+                    padding: 14px;
+                    margin-top: 6px;
+                    font-size: 0.85rem;
+                    color: #8b949e;
+                    line-height: 1.6;
+                ">
+                <b style="color:#f0f6fc;">How to pin a location</b><br><br>
+                1️⃣ Click anywhere on the map<br><br>
+                2️⃣ Red pin moves to your click<br><br>
+                3️⃣ Coordinates auto-fill below<br><br>
+                4️⃣ Fine-tune with number inputs<br><br>
+                <span style="color:#3fb950;">Or pick a preset above ↑</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        # Detect a new map click — compare to last known click signature
+        clicked = map_data.get("last_clicked") if map_data else None
+        if clicked:
+            new_sig = f"{clicked['lat']:.5f},{clicked['lng']:.5f}"
+            if new_sig != st.session_state.get("_last_click_sig"):
+                st.session_state["_last_click_sig"] = new_sig
+                st.session_state["lat_input"] = round(clicked["lat"], 4)
+                st.session_state["lon_input"] = round(clicked["lng"], 4)
+                st.rerun()
+
+        # Fine-tune coordinate inputs (synced with map click / preset)
         col_lat, col_lon = st.columns(2)
         with col_lat:
             lat = st.number_input(
@@ -315,31 +441,38 @@ with tab_scan:
             # Save the uploaded image to disk with a timestamped filename
             timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
             ext = Path(uploaded_file.name).suffix or ".jpg"
-            save_filename = f"{timestamp_str}_{predicted_class}{ext}"
+            save_filename = f"{timestamp_str}_{confirmed_class}{ext}"
             save_path = UPLOAD_DIR / save_filename
 
             image.save(str(save_path))
 
-            # Write report to SQLite
+            # Write report to SQLite — use confirmed class/severity (may be user-overridden)
             new_id = add_report(
                 image_path=str(save_path),
-                predicted_class=predicted_class,
+                predicted_class=confirmed_class,
                 confidence=confidence,
-                severity=severity,
+                severity=confirmed_severity,
                 lat=lat,
                 lon=lon,
             )
 
-            st.toast(f"🗄️ Report #{new_id} saved to database!", icon="✅")
+            was_overridden = confirmed_class != predicted_class
+            st.toast(
+                f"🗄️ Report #{new_id} saved"
+                + (f" (class corrected: {predicted_class} → {confirmed_class})" if was_overridden else "")
+                + "!",
+                icon="✅",
+            )
             st.session_state["just_submitted"] = {
                 "id": new_id,
-                "class": predicted_class,
-                "severity": severity,
+                "class": confirmed_class,
+                "severity": confirmed_severity,
                 "lat": lat,
                 "lon": lon,
             }
-            # Reset active upload cache so subsequent submissions are fresh
+            # Reset upload and override cache for the next submission
             st.session_state.pop("active_upload", None)
+            st.session_state.pop("override_class", None)
             st.rerun()  # Refresh sidebar counter and database state
 
     else:
