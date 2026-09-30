@@ -302,61 +302,130 @@ WASTE_CLASSES = ["cardboard", "glass", "metal", "paper", "plastic", "trash"]
 # Sidebar
 # ────────────────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.header("⚙️ System Status")
-    st.success("✅  Frontend: Streamlit Active")
-    st.info("🗄️  Storage: SQLite (Local)")
+    # ── Sidebar Brand Header ──
+    st.markdown(
+        """
+        <div style="display:flex; align-items:center; gap:10px; padding:2px 0 14px 0; border-bottom:1px solid rgba(255,255,255,0.08); margin-bottom:16px;">
+            <span style="font-size:1.8rem; filter:drop-shadow(0 2px 6px rgba(56,189,248,0.5));">🌊</span>
+            <div>
+                <div style="font-size:1.2rem; font-weight:800; background:linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">AquaScan</div>
+                <div style="font-size:0.70rem; color:#64748b; font-weight:700; letter-spacing:0.8px;">SYSTEM DASHBOARD</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
+    # ── Live Status Indicator Card ──
+    st.markdown(
+        """
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px 14px; margin-bottom:14px; backdrop-filter:blur(8px);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:0.78rem; color:#94a3b8; font-weight:600;">Frontend UI</span>
+                <span style="display:inline-flex; align-items:center; gap:6px; font-size:0.78rem; color:#34d399; font-weight:700;">
+                    <span style="width:6px; height:6px; background:#34d399; border-radius:50%; box-shadow:0 0 8px #34d399;"></span> Active
+                </span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.78rem; color:#94a3b8; font-weight:600;">Incident DB</span>
+                <span style="display:inline-flex; align-items:center; gap:6px; font-size:0.78rem; color:#38bdf8; font-weight:700;">
+                    <span style="width:6px; height:6px; background:#38bdf8; border-radius:50%; box-shadow:0 0 8px #38bdf8;"></span> SQLite Live
+                </span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # ── Total Reports Hero Metric ──
     report_count = get_report_count()
-    st.metric(label="📋 Total Reports Logged", value=report_count)
-
     sev_summary = get_severity_summary()
-    st.markdown("**Priority Distribution**")
-    m_col1, m_col2 = st.columns(2)
-    with m_col1:
-        st.metric("🚨 Critical", sev_summary["Critical"])
-        st.metric("⚠️ Medium", sev_summary["Medium"])
-    with m_col2:
-        st.metric("⚡ High", sev_summary["High"])
-        st.metric("🌱 Low", sev_summary["Low"])
+    total_sev = max(sum(sev_summary.values()), 1)
 
-    st.write("---")
-    st.markdown("### 🧪 Demo Tools")
-    col_seed, col_clear = st.columns(2)
-    with col_seed:
-        if st.button("🌱 Load Hotspots", help="Populate map with sample Indian waterway reports", use_container_width=True):
-            count = seed_demo_reports(force=True)
-            st.toast(f"Added {count} hotspot records!", icon="🌊")
-            st.rerun()
-    with col_clear:
-        if st.button("🗑️ Reset DB", help="Clear all stored reports", use_container_width=True):
-            clear_all_reports()
-            st.toast("Database cleared", icon="🧹")
-            st.rerun()
+    crit_pct = (sev_summary['Critical'] / total_sev) * 100
+    high_pct = (sev_summary['High'] / total_sev) * 100
+    med_pct = (sev_summary['Medium'] / total_sev) * 100
+    low_pct = (sev_summary['Low'] / total_sev) * 100
 
-    st.write("---")
+    st.markdown(
+        f"""
+        <div style="background:linear-gradient(135deg, rgba(14,165,233,0.12), rgba(30,58,138,0.15)); border:1px solid rgba(56,189,248,0.25); border-radius:12px; padding:14px 16px; margin-bottom:14px;">
+            <div style="font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">📋 Total Incidents Logged</div>
+            <div style="font-size:2.1rem; font-weight:800; color:#f8fafc; line-height:1.2; margin-top:2px;">{report_count}</div>
+            
+            <!-- Severity Multi-color Distribution Bar -->
+            <div style="display:flex; height:6px; border-radius:3px; overflow:hidden; margin-top:10px; background:rgba(255,255,255,0.08);">
+                <div style="width:{crit_pct}%; background:#f85149;" title="Critical"></div>
+                <div style="width:{high_pct}%; background:#d29922;" title="High"></div>
+                <div style="width:{med_pct}%; background:#388bfd;" title="Medium"></div>
+                <div style="width:{low_pct}%; background:#3fb950;" title="Low"></div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # ── Severity Breakdown Cards ──
+    st.markdown("<div style='font-size:0.78rem; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;'>Priority Distribution</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:16px;">
+            <div style="background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.25); border-radius:8px; padding:8px 10px;">
+                <div style="font-size:0.72rem; color:#f85149; font-weight:700;">🚨 CRITICAL</div>
+                <div style="font-size:1.25rem; font-weight:800; color:#ffffff; margin-top:1px;">{sev_summary['Critical']}</div>
+            </div>
+            <div style="background:rgba(210,153,34,0.08); border:1px solid rgba(210,153,34,0.25); border-radius:8px; padding:8px 10px;">
+                <div style="font-size:0.72rem; color:#d29922; font-weight:700;">⚡ HIGH</div>
+                <div style="font-size:1.25rem; font-weight:800; color:#ffffff; margin-top:1px;">{sev_summary['High']}</div>
+            </div>
+            <div style="background:rgba(56,139,253,0.08); border:1px solid rgba(56,139,253,0.25); border-radius:8px; padding:8px 10px;">
+                <div style="font-size:0.72rem; color:#388bfd; font-weight:700;">⚠️ MEDIUM</div>
+                <div style="font-size:1.25rem; font-weight:800; color:#ffffff; margin-top:1px;">{sev_summary['Medium']}</div>
+            </div>
+            <div style="background:rgba(63,185,80,0.08); border:1px solid rgba(63,185,80,0.25); border-radius:8px; padding:8px 10px;">
+                <div style="font-size:0.72rem; color:#3fb950; font-weight:700;">🌱 LOW</div>
+                <div style="font-size:1.25rem; font-weight:800; color:#ffffff; margin-top:1px;">{sev_summary['Low']}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # ── Demo Actions ──
+    st.markdown("<div style='font-size:0.78rem; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;'>🧪 Map & Demo Tools</div>", unsafe_allow_html=True)
+    if st.button("🌱 Populate Sample Hotspots", help="Populate map with sample Indian waterway debris records", use_container_width=True):
+        count = seed_demo_reports(force=True)
+        st.toast(f"Added {count} hotspot records!", icon="🌊")
+        st.rerun()
+
+    if st.button("🗑️ Clear All Reports", help="Reset and clear all stored reports", use_container_width=True):
+        clear_all_reports()
+        st.toast("Database cleared", icon="🧹")
+        st.rerun()
+
+    st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
     with st.expander("🔑 LLM Settings (Groq API)", expanded=False):
-        st.caption("Optional: Set a key from [console.groq.com](https://console.groq.com) for real-time Llama 3.1 narration.")
+        st.caption("Optional: Set a key from [console.groq.com](https://console.groq.com) for real-time LLaMA 3.1 ecological guidance.")
         groq_input = st.text_input(
             "Groq API Key",
             type="password",
             value=st.session_state.get("groq_api_key", ""),
             placeholder="gsk_...",
-            help="If left blank, system falls back to environment variable or standard guidance.",
+            help="If left blank, system falls back to standard waterway protocols.",
             key="groq_key_input",
         )
         if groq_input != st.session_state.get("groq_api_key", ""):
             st.session_state["groq_api_key"] = groq_input
 
-    st.markdown("### 📌 Quick Guide")
-    st.markdown(
-        """
-        1. **Scan & Report:** Upload a photo of waterway debris.
-        2. **Set Location:** Enter GPS coords or pick a preset.
-        3. **Submit:** Save the report to the database.
-        4. **Explore Hotspots:** View logged reports on the map.
-        """
-    )
-    st.caption("🤖 Person A pipeline ready: predict.py + Grad-CAM + train.py. Place weights at model/weights/efficientnetb0_aquascan.h5 to activate real model.")
+    with st.expander("📌 Quick Workflow Guide", expanded=False):
+        st.markdown(
+            """
+            1. **Scan & Report:** Upload a photo or click a demo sample.
+            2. **Set Location:** Click the map, pick a preset, or detect GPS.
+            3. **Submit:** Save the report to SQLite database.
+            4. **Explore Hotspots:** Inspect clusters and heatmaps.
+            """
+        )
 
 
 # ────────────────────────────────────────────────────────────────────────────
